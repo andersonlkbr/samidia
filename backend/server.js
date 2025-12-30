@@ -3,49 +3,54 @@ const cors = require('cors');
 const path = require('path');
 
 const app = express();
-const PORT = 3000;
 
-/* ===============================
+/* ==========================
    MIDDLEWARES
-================================ */
+========================== */
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-/* ===============================
+/* ==========================
    ARQUIVOS ESTÁTICOS
-================================ */
-app.use(express.static(path.join(__dirname, '../public')));
-app.use(
-  '/uploads',
-  express.static(path.join(__dirname, 'uploads'))
-);
+========================== */
 
-/* ===============================
+// Frontend (admin, player, dashboard, etc)
+app.use(express.static(path.join(__dirname, '../public')));
+
+// Uploads de imagens e vídeos
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+/* ==========================
    ROTAS DA API
-================================ */
+========================== */
 app.use('/api/tv', require('./routes/tv'));
-app.use('/api/midia', require('./routes/midia'));
+app.use('/api/midia', require('./routes/midia'));     // upload / playlist
 app.use('/api/noticias', require('./routes/noticias'));
 app.use('/api/clima', require('./routes/clima'));
 app.use('/api/ping', require('./routes/ping'));
-app.use('/api/empresa', require('./routes/empresa'));
 app.use('/api/relatorio', require('./routes/relatorio'));
 app.use('/api/dashboard', require('./routes/dashboard'));
 
-   
+/* ==========================
+   ROTAS PADRÃO
+========================== */
 
-
-/* ===============================
-   FALLBACK (HTML)
-================================ */
+// Página inicial simples (opcional)
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/admin.html'));
 });
 
-/* ===============================
-   START
-================================ */
-app.listen(PORT, () => {
-  console.log(`Servidor rodando em http://localhost:${PORT}`);
+// Fallback para erros de rota
+app.use((req, res) => {
+  res.status(404).json({ erro: 'Rota não encontrada' });
+});
+
+/* ==========================
+   START DO SERVIDOR
+========================== */
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 SAmídia rodando na porta ${PORT}`);
 });
