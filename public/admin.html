@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Painel Admin — SAmídia</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      padding: 20px;
+    }
+
+    h1, h2 {
+      margin-bottom: 10px;
+    }
+
+    a {
+      color: #8fd3ff;
+      text-decoration: none;
+    }
+
+    input, select, button {
+      padding: 6px;
+      margin: 4px 0;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .box {
+      background: #1c1c1c;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+    }
+
+    .tv-item {
+      background: #222;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+    }
+
+    .midia {
+      background: #222;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .midia.inativa {
+      opacity: 0.4;
+    }
+
+    .info {
+      font-size: 13px;
+      opacity: 0.85;
+      line-height: 1.4;
+    }
+
+    .acoes button {
+      margin-left: 4px;
+    }
+
+    .link {
+      font-size: 13px;
+      color: #8fd3ff;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+
+<div class="box">
+  <a href="/admin.html">📺 Admin</a> |
+  <a href="/relatorios.html">📊 Relatórios</a>
+  <a href="/dashboard.html">📊 Dashboard</a>
+</div>
+
+<h1>📺 Painel Admin — SAmídia</h1>
+
+<!-- TVs -->
+<div class="box">
+  <h2>Criar TV</h2>
+  <input id="tvNome" placeholder="Nome da TV">
+  <input id="tvCidade" placeholder="Cidade">
+  <input id="tvEstado" placeholder="Estado">
+  <button onclick="criarTV()">Criar TV</button>
+</div>
+
+<div class="box">
+  <h2>TVs cadastradas</h2>
+  <div id="listaTVs"></div>
+</div>
+
+<div class="box">
+  <h2>🎨 Tema da TV</h2>
+
+  <label>Cor do rodapé</label><br>
+  <input type="color" id="temaCor"><br>
+
+  <label>Cor do texto</label><br>
+  <input type="color" id="temaTexto"><br>
+
+  <label>URL da logo</label><br>
+  <input id="temaLogo" placeholder="/uploads/logo.png"><br><br>
+
+  <button onclick="salvarTema()">Salvar tema</button>
+</div>
+
+
+<!-- MÍDIAS -->
+<div class="box">
+  <h2>Gerenciar Publicidades</h2>
+
+  <select id="tvSelect"></select>
+  <hr>
+
+  <input type="file" id="arquivo"><br>
+
+  <label>Duração (seg)</label><br>
+  <input type="number" id="duracao" value="10"><br>
+
+  <label>Região</label><br>
+  <select id="regiao">
+    <option value="BR">Brasil</option>
+    <option value="CE">Ceará</option>
+    <option value="FORTALEZA">Fortaleza</option>
+  </select><br>
+
+  <label>Hora início</label><br>
+  <input type="time" id="horaInicio"><br>
+
+  <label>Hora fim</label><br>
+  <input type="time" id="horaFim"><br>
+
+  <label>Dias</label><br>
+  <label><input type="checkbox" class="dia" value="1">Seg</label>
+  <label><input type="checkbox" class="dia" value="2">Ter</label>
+  <label><input type="checkbox" class="dia" value="3">Qua</label>
+  <label><input type="checkbox" class="dia" value="4">Qui</label>
+  <label><input type="checkbox" class="dia" value="5">Sex</label>
+  <label><input type="checkbox" class="dia" value="6">Sáb</label>
+  <label><input type="checkbox" class="dia" value="0">Dom</label>
+  <br><br>
+
+  <button onclick="enviarMidia()">Enviar mídia</button>
+
+  <hr>
+  <div id="listaMidias"></div>
+</div>
+
+<script src="/admin.js"></script>
+</body>
+</html>

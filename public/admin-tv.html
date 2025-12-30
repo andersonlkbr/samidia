@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Gerenciar TV</title>
+  <link rel="stylesheet" href="/admin-tv.css">
+</head>
+<body>
+
+<h1>Gerenciar TV</h1>
+
+<h2>Enviar mídia</h2>
+<form id="formUpload">
+  <input type="file" id="arquivo" accept="image/*,video/*" required>
+  <button type="submit">Enviar</button>
+</form>
+
+<p id="status"></p>
+
+<hr>
+
+<h2>Playlist</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Tipo</th>
+      <th>Arquivo</th>
+      <th>Ordem</th>
+      <th>Duração (s)</th>
+    </tr>
+  </thead>
+  <tbody id="playlist"></tbody>
+</table>
+
+<br>
+<button id="salvar">Salvar Playlist</button>
+
+<script src="/admin-tv.js"></script>
+</body>
+</html>

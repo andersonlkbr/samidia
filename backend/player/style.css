@@ -1,0 +1,19 @@
+html, body {
+    margin: 0;
+    background: black;
+    color: white;
+    font-family: Arial;
+  }
+  
+  #app {
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .noticias {
+    padding: 40px;
+    font-size: 36px;
+  }
