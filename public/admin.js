@@ -4,6 +4,7 @@ let tvAtual = null;
    ELEMENTOS
 ========================== */
 const listaTVs = document.getElementById('listaTVs');
+const selectTVMidia = document.getElementById('tvMidiaSelect');
 const listaMidias = document.getElementById('listaMidias');
 
 const arquivoInput = document.getElementById('arquivo');
@@ -17,28 +18,42 @@ async function carregarTVs() {
   const res = await fetch('/api/tv');
   const tvs = await res.json();
 
+  // Lista visual
   listaTVs.innerHTML = '';
+
+  // Select de mídia
+  selectTVMidia.innerHTML = '<option value="">Selecione uma TV</option>';
+
   tvs.forEach(tv => {
+    // Lista
     const li = document.createElement('li');
     li.textContent = `${tv.nome} (${tv.cidade}/${tv.estado})`;
-    li.onclick = () => selecionarTV(tv.id);
     listaTVs.appendChild(li);
+
+    // Select
+    const opt = document.createElement('option');
+    opt.value = tv.id;
+    opt.textContent = tv.nome;
+    selectTVMidia.appendChild(opt);
   });
 }
 
 /* ==========================
-   SELECIONAR TV
+   SELECIONAR TV (MIDIA)
 ========================== */
-async function selecionarTV(id) {
-  tvAtual = id;
+selectTVMidia.addEventListener('change', async () => {
+  tvAtual = selectTVMidia.value;
   await carregarMidias();
-}
+});
 
 /* ==========================
    CARREGAR MÍDIAS
 ========================== */
 async function carregarMidias() {
-  if (!tvAtual) return;
+  if (!tvAtual) {
+    listaMidias.innerHTML = '';
+    return;
+  }
 
   const res = await fetch(`/api/midia/${tvAtual}`);
   const midias = await res.json();
@@ -52,7 +67,7 @@ async function carregarMidias() {
     div.innerHTML = `
       <strong>${m.tipo.toUpperCase()}</strong><br>
       Duração: ${m.duracao || '-'}s<br>
-      Região: ${m.regiao || '-'}<br>
+      Região: ${m.regiao || 'Todas'}<br>
       <button onclick="excluirMidia('${m.id}')">Excluir</button>
     `;
 
