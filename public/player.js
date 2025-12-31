@@ -7,50 +7,36 @@ let ativo = 'A';
 let timer = null;
 let lastChange = Date.now();
 
+let regiaoTV = null;
+
 const layerA = document.getElementById('layerA');
 const layerB = document.getElementById('layerB');
 const dataHoraEl = document.getElementById('dataHora');
 const climaEl = document.getElementById('clima');
 const rodape = document.getElementById('rodape');
 
-/* ===============================
-   TEMA
-================================ */
-async function carregarTema() {
-  try {
-    const r = await fetch(`/api/tv/${tvId}/tema`);
-    const tema = await r.json();
+/* ==========================
+   REGIÃO DA TV
+========================== */
+async function carregarRegiaoTV() {
+  const res = await fetch('/api/tv');
+  const tvs = await res.json();
 
-    if (!tema) return;
+  const tv = tvs.find(t => t.id === tvId);
+  if (!tv) return;
 
-    rodape.style.background = tema.tema_cor || 'rgba(0,0,0,0.75)';
-    rodape.style.color = tema.tema_texto || '#fff';
-
-    if (tema.logo) {
-      const logo = document.createElement('img');
-      logo.src = tema.logo;
-      logo.style.cssText = `
-        position:absolute;
-        top:20px;
-        left:20px;
-        max-height:80px;
-        z-index:10;
-      `;
-      document.body.appendChild(logo);
-    }
-  } catch {}
+  if (tv.cidade?.toLowerCase() === 'fortaleza') {
+    regiaoTV = 'fortaleza';
+  } else if (tv.estado?.toLowerCase() === 'ce') {
+    regiaoTV = 'ceara';
+  } else {
+    regiaoTV = 'brasil';
+  }
 }
 
-/* ===============================
-   FULLSCREEN
-================================ */
-function entrarFullscreen() {
-  document.documentElement.requestFullscreen?.();
-}
-document.addEventListener('click', entrarFullscreen);
-setTimeout(entrarFullscreen, 1500);
-
-/* DATA / HORA */
+/* ==========================
+   DATA / HORA
+========================== */
 function atualizarHora() {
   const agora = new Date();
   dataHoraEl.textContent =
@@ -61,7 +47,9 @@ function atualizarHora() {
 setInterval(atualizarHora, 1000);
 atualizarHora();
 
-/* CLIMA */
+/* ==========================
+   CLIMA
+========================== */
 async function carregarClima() {
   try {
     const r = await fetch(`/api/clima/${tvId}`);
@@ -74,15 +62,40 @@ async function carregarClima() {
 carregarClima();
 setInterval(carregarClima, 600000);
 
-/* PLAYLIST */
+/* ==========================
+   FILTRO DE REGIÃO
+========================== */
+function midiaCompativel(m) {
+  if (!m.regiao) return true;
+
+  if (m.regiao === 'fortaleza') {
+    return regiaoTV === 'fortaleza';
+  }
+
+  if (m.regiao === 'ceara') {
+    return regiaoTV === 'ceara' || regiaoTV === 'fortaleza';
+  }
+
+  if (m.regiao === 'brasil') {
+    return true;
+  }
+
+  return false;
+}
+
+/* ==========================
+   PLAYLIST
+========================== */
 async function carregarPlaylist() {
   const midias = await (await fetch(`/api/midia/${tvId}`)).json();
   const noticias = await (await fetch(`/api/noticias/${tvId}`)).json();
 
+  const midiasFiltradas = midias.filter(midiaCompativel);
+
   playlist = [];
   let n = 0;
 
-  midias.forEach((m, i) => {
+  midiasFiltradas.forEach((m, i) => {
     playlist.push(m);
     if ((i + 1) % 2 === 0 && noticias[n]) {
       playlist.push(noticias[n++]);
@@ -90,7 +103,9 @@ async function carregarPlaylist() {
   });
 }
 
-/* RELATÓRIO */
+/* ==========================
+   RELATÓRIO
+========================== */
 function registrarExibicao(item) {
   fetch('/api/relatorio', {
     method: 'POST',
@@ -104,7 +119,9 @@ function registrarExibicao(item) {
   });
 }
 
-/* RENDER */
+/* ==========================
+   RENDER
+========================== */
 function render(item, layer) {
   layer.innerHTML = '';
   registrarExibicao(item);
@@ -149,7 +166,9 @@ function render(item, layer) {
   }
 }
 
-/* TRANSIÇÃO */
+/* ==========================
+   TRANSIÇÃO
+========================== */
 function proximo() {
   lastChange = Date.now();
 
@@ -171,22 +190,28 @@ function proximo() {
   }
 }
 
-/* WATCHDOG */
+/* ==========================
+   WATCHDOG + PING
+========================== */
 setInterval(() => {
   if (Date.now() - lastChange > 90000) location.reload();
 }, 30000);
 
-/* PING */
 setInterval(() => {
   fetch(`/api/ping/${tvId}`, { method: 'POST' });
 }, 30000);
 
-/* START */
+/* ==========================
+   START
+========================== */
 (async () => {
-  await carregarTema();
+  await carregarRegiaoTV();
   await carregarPlaylist();
 
-  if (!playlist.length) return setTimeout(() => location.reload(), 15000);
+  if (!playlist.length) {
+    console.warn('Nenhuma mídia compatível com a região');
+    return;
+  }
 
   render(playlist[0], layerA);
   if (playlist[0].tipo !== 'video') {
