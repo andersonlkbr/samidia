@@ -24,11 +24,11 @@ const BUCKET = process.env.R2_BUCKET;
 const PUBLIC_URL = process.env.R2_PUBLIC_URL;
 
 /* ==========================
-   MULTER (MEMORY ONLY)
+   MULTER (MEMORY)
 ========================== */
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 200 * 1024 * 1024 } // 200MB
+  limits: { fileSize: 200 * 1024 * 1024 }
 });
 
 /* ==========================
@@ -36,7 +36,13 @@ const upload = multer({
 ========================== */
 router.get('/:tv', (req, res) => {
   db.all(
-    'SELECT * FROM midias WHERE tv_id = ? AND ativo = 1 ORDER BY ordem ASC',
+    `
+    SELECT *
+    FROM midias
+    WHERE tv_id = ?
+      AND ativo = 1
+    ORDER BY ordem ASC
+    `,
     [req.params.tv],
     (err, rows) => {
       if (err) return res.status(500).json({ erro: err.message });
@@ -50,6 +56,8 @@ router.get('/:tv', (req, res) => {
 ========================== */
 router.post('/:tv', upload.single('arquivo'), async (req, res) => {
   try {
+    const { duracao, regiao } = req.body;
+
     if (!req.file) {
       return res.status(400).json({ erro: 'Arquivo não enviado' });
     }
@@ -57,29 +65,31 @@ router.post('/:tv', upload.single('arquivo'), async (req, res) => {
     const ext = path.extname(req.file.originalname);
     const nomeArquivo = crypto.randomBytes(16).toString('hex') + ext;
 
-    const comando = new PutObjectCommand({
-      Bucket: BUCKET,
-      Key: nomeArquivo,
-      Body: req.file.buffer,
-      ContentType: req.file.mimetype
-    });
-
-    await s3.send(comando);
+    await s3.send(
+      new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: nomeArquivo,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype
+      })
+    );
 
     const url = `${PUBLIC_URL}/${nomeArquivo}`;
     const tipo = req.file.mimetype.startsWith('video') ? 'video' : 'imagem';
 
     db.run(
       `
-      INSERT INTO midias (id, tv_id, tipo, url, duracao, ativo, ordem)
-      VALUES (?, ?, ?, ?, ?, 1, 999)
+      INSERT INTO midias
+      (id, tv_id, tipo, url, duracao, regiao, ativo, ordem)
+      VALUES (?, ?, ?, ?, ?, ?, 1, 999)
       `,
       [
         crypto.randomUUID(),
         req.params.tv,
         tipo,
         url,
-        tipo === 'imagem' ? 10 : null
+        duracao ? Number(duracao) : (tipo === 'imagem' ? 10 : null),
+        regiao || null
       ],
       () => res.json({ ok: true, url })
     );
