@@ -4,6 +4,8 @@ const path = require('path');
 
 const app = express();
 
+const playlistRoutes = require('./routes/playlist');
+
 /* ==========================
    MIDDLEWARES
 ========================== */
@@ -31,6 +33,7 @@ app.use('/api/clima', require('./routes/clima'));
 app.use('/api/ping', require('./routes/ping'));
 app.use('/api/relatorio', require('./routes/relatorio'));
 app.use('/api/dashboard', require('./routes/dashboard'));
+app.use('/api/playlist', playlistRoutes);
 
 /* ==========================
    ROTAS PADRÃO

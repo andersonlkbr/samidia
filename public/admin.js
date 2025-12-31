@@ -1,36 +1,45 @@
 let tvAtual = null;
+let midiasAtuais = [];
 
-/* ==========================
-   ELEMENTOS
-========================== */
-const listaTVs = document.getElementById('listaTVs');
-const selectTVMidia = document.getElementById('tvMidiaSelect');
+const tvCards = document.getElementById('tvCards');
 const listaMidias = document.getElementById('listaMidias');
+const selectTVMidia = document.getElementById('tvMidiaSelect');
 
 const arquivoInput = document.getElementById('arquivo');
 const duracaoInput = document.getElementById('duracao');
 const regiaoSelect = document.getElementById('regiao');
 
 /* ==========================
-   CARREGAR TVs
+   TVs
 ========================== */
 async function carregarTVs() {
   const res = await fetch('/api/tv');
   const tvs = await res.json();
 
-  // Lista visual
-  listaTVs.innerHTML = '';
-
-  // Select de mídia
+  tvCards.innerHTML = '';
   selectTVMidia.innerHTML = '<option value="">Selecione uma TV</option>';
 
-  tvs.forEach(tv => {
-    // Lista
-    const li = document.createElement('li');
-    li.textContent = `${tv.nome} (${tv.cidade}/${tv.estado})`;
-    listaTVs.appendChild(li);
+  const agora = Date.now();
 
-    // Select
+  tvs.forEach(tv => {
+    const online =
+      tv.ultimo_ping &&
+      agora - tv.ultimo_ping < 60000;
+
+    const card = document.createElement('div');
+    card.className = 'card tv';
+
+    card.innerHTML = `
+      <strong>${tv.nome}</strong><br>
+      ${tv.cidade}/${tv.estado}<br>
+      <span style="color:${online ? '#22c55e' : '#ef4444'}">
+        ${online ? 'ONLINE' : 'OFFLINE'}
+      </span><br><br>
+      <a href="/player.html?tv=${tv.id}" target="_blank">Abrir TV</a>
+    `;
+
+    tvCards.appendChild(card);
+
     const opt = document.createElement('option');
     opt.value = tv.id;
     opt.textContent = tv.nome;
@@ -38,89 +47,161 @@ async function carregarTVs() {
   });
 }
 
-/* ==========================
-   SELECIONAR TV (MIDIA)
-========================== */
-selectTVMidia.addEventListener('change', async () => {
+selectTVMidia.onchange = async () => {
   tvAtual = selectTVMidia.value;
   await carregarMidias();
-});
+};
 
 /* ==========================
-   CARREGAR MÍDIAS
+   MÍDIAS (DRAG & DROP)
 ========================== */
 async function carregarMidias() {
-  if (!tvAtual) {
-    listaMidias.innerHTML = '';
-    return;
-  }
+  if (!tvAtual) return;
 
   const res = await fetch(`/api/midia/${tvAtual}`);
-  const midias = await res.json();
+  midiasAtuais = await res.json();
 
   listaMidias.innerHTML = '';
 
-  midias.forEach(m => {
-    const div = document.createElement('div');
-    div.className = 'midia-item';
+  midiasAtuais.forEach(m => {
+    const card = document.createElement('div');
+    card.className = 'card media';
+    card.draggable = true;
+    card.dataset.id = m.id;
 
-    div.innerHTML = `
-      <strong>${m.tipo.toUpperCase()}</strong><br>
-      Duração: ${m.duracao || '-'}s<br>
-      Região: ${m.regiao || 'Todas'}<br>
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb';
+    thumb.innerHTML =
+      m.tipo === 'imagem'
+        ? `<img src="${m.url}">`
+        : '🎥 Vídeo';
+
+    const info = document.createElement('div');
+    info.className = 'media-info';
+    info.innerHTML = `
+      <strong>${m.tipo.toUpperCase()}</strong>
+      <div class="badges">
+        <span class="badge">${m.duracao}s</span>
+        <span class="badge">${m.regiao || 'Todas'}</span>
+        <span class="badge ${m.ativo ? 'active' : 'inactive'}">
+          ${m.ativo ? 'Ativo' : 'Inativo'}
+        </span>
+      </div>
+    `;
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    actions.innerHTML = `
+      <button onclick="toggleMidia('${m.id}', ${m.ativo})">
+        ${m.ativo ? 'Desativar' : 'Ativar'}
+      </button>
       <button onclick="excluirMidia('${m.id}')">Excluir</button>
     `;
 
-    listaMidias.appendChild(div);
+    card.appendChild(thumb);
+    card.appendChild(info);
+    card.appendChild(actions);
+
+    adicionarDragEventos(card);
+
+    listaMidias.appendChild(card);
   });
 }
 
 /* ==========================
-   ENVIAR MÍDIA
+   DRAG LOGIC
+========================== */
+let dragEl = null;
+
+function adicionarDragEventos(el) {
+  el.addEventListener('dragstart', () => {
+    dragEl = el;
+    el.classList.add('dragging');
+  });
+
+  el.addEventListener('dragend', async () => {
+    el.classList.remove('dragging');
+    salvarOrdem();
+  });
+
+  el.addEventListener('dragover', e => {
+    e.preventDefault();
+    el.classList.add('over');
+  });
+
+  el.addEventListener('dragleave', () => {
+    el.classList.remove('over');
+  });
+
+  el.addEventListener('drop', e => {
+    e.preventDefault();
+    el.classList.remove('over');
+
+    if (dragEl && dragEl !== el) {
+      const els = [...listaMidias.children];
+      const dragIndex = els.indexOf(dragEl);
+      const dropIndex = els.indexOf(el);
+
+      if (dragIndex < dropIndex) {
+        listaMidias.insertBefore(dragEl, el.nextSibling);
+      } else {
+        listaMidias.insertBefore(dragEl, el);
+      }
+    }
+  });
+}
+
+/* ==========================
+   SALVAR ORDEM
+========================== */
+async function salvarOrdem() {
+  const ids = [...listaMidias.children].map(
+    el => el.dataset.id
+  );
+
+  await fetch('/api/midia/ordenar', {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids })
+  });
+}
+
+/* ==========================
+   AÇÕES
+========================== */
+async function toggleMidia(id, ativo) {
+  await fetch(`/api/midia/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ativo: !ativo })
+  });
+  await carregarMidias();
+}
+
+async function excluirMidia(id) {
+  if (!confirm('Excluir mídia?')) return;
+  await fetch(`/api/midia/${id}`, { method: 'DELETE' });
+  await carregarMidias();
+}
+
+/* ==========================
+   UPLOAD
 ========================== */
 async function enviarMidia() {
-  if (!tvAtual) {
-    alert('Selecione uma TV');
-    return;
-  }
-
-  if (!arquivoInput.files.length) {
-    alert('Selecione um arquivo');
-    return;
-  }
+  if (!tvAtual || !arquivoInput.files.length) return;
 
   const form = new FormData();
   form.append('arquivo', arquivoInput.files[0]);
   form.append('duracao', duracaoInput.value);
   form.append('regiao', regiaoSelect.value);
 
-  const res = await fetch(`/api/midia/${tvAtual}`, {
+  await fetch(`/api/midia/${tvAtual}`, {
     method: 'POST',
     body: form
   });
 
-  if (!res.ok) {
-    alert('Erro ao enviar mídia');
-    return;
-  }
-
   arquivoInput.value = '';
-  duracaoInput.value = '';
-
   await carregarMidias();
 }
 
-/* ==========================
-   EXCLUIR MÍDIA
-========================== */
-async function excluirMidia(id) {
-  if (!confirm('Excluir mídia?')) return;
-
-  await fetch(`/api/midia/${id}`, { method: 'DELETE' });
-  await carregarMidias();
-}
-
-/* ==========================
-   START
-========================== */
 carregarTVs();

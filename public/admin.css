@@ -1,31 +1,147 @@
+* {
+  box-sizing: border-box;
+  font-family: Inter, Arial, sans-serif;
+}
+
 body {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    background: #f2f2f2;
-  }
-  
-  h1, h2 {
-    margin-bottom: 10px;
-  }
-  
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 30px;
-  }
-  
-  th, td {
-    border: 1px solid #ccc;
-    padding: 10px;
-  }
-  
-  th {
-    background: #333;
-    color: white;
-  }
-  
-  button {
-    padding: 10px 20px;
-    cursor: pointer;
-  }
-  
+  margin: 0;
+  background: #0f172a;
+  color: #e5e7eb;
+}
+
+.layout {
+  display: flex;
+  height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 220px;
+  background: #020617;
+  padding: 20px;
+}
+
+.sidebar h1 {
+  margin: 0 0 20px;
+}
+
+.sidebar nav a {
+  display: block;
+  padding: 10px;
+  margin-bottom: 6px;
+  color: #cbd5f5;
+  text-decoration: none;
+  border-radius: 6px;
+}
+
+.sidebar nav a.active,
+.sidebar nav a:hover {
+  background: #1e293b;
+}
+
+/* CONTENT */
+.content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+h2 {
+  margin-bottom: 10px;
+}
+
+/* CARDS */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 15px;
+}
+
+.card {
+  background: #111827;
+  border-radius: 12px;
+  overflow: hidden;
+  transition: transform 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+}
+
+/* TV CARD */
+.card.tv {
+  padding: 15px;
+}
+
+/* MEDIA CARD */
+.card.media {
+  display: flex;
+  flex-direction: column;
+}
+
+.thumb {
+  height: 140px;
+  background: #020617;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+}
+
+.thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.media-info {
+  padding: 12px;
+  font-size: 14px;
+}
+
+.badges {
+  display: flex;
+  gap: 6px;
+  margin: 6px 0;
+}
+
+.badge {
+  background: #1e293b;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.badge.active {
+  background: #22c55e;
+  color: #000;
+}
+
+.badge.inactive {
+  background: #ef4444;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-top: 1px solid #1e293b;
+}
+
+.actions button {
+  background: none;
+  border: none;
+  color: #cbd5f5;
+  cursor: pointer;
+}
+.card.media {
+  cursor: grab;
+}
+
+.card.media.dragging {
+  opacity: 0.4;
+}
+
+.card.media.over {
+  outline: 2px dashed #22c55e;
+}
