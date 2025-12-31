@@ -84,10 +84,10 @@ async function enviarMidia() {
     document.querySelectorAll('.dia:checked')
   ).map(d => d.value).join(',');
 
-  const form = new FormData();
-  form.append('arquivo', arquivo.files[0]);
-  form.append('duracao', duracao.value);
-  form.append('regiao', regiao.value);
+const form = new FormData();
+  form.append('arquivo', arquivoInput.files[0]);
+  form.append('duracao', duracaoInput.value);
+  form.append('regiao', regiaoSelect.value);
   form.append('hora_inicio', horaInicio.value);
   form.append('hora_fim', horaFim.value);
   form.append('dias', dias);
