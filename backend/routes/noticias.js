@@ -1,45 +1,30 @@
 const express = require('express');
-const axios = require('axios');
+const router = express.Router();
 const Parser = require('rss-parser');
 
-const router = express.Router();
 const parser = new Parser();
 
-const RSS_URL = 'https://g1.globo.com/rss/g1/ce/ceara';
-
-router.get('/', async (req, res) => {
+/* ==========================
+   NOTÍCIAS VIA RSS (G1 CEARÁ)
+========================== */
+router.get('/:tv', async (req, res) => {
   try {
-    const response = await axios.get(RSS_URL, {
-      responseType: 'text',
-      headers: {
-        'User-Agent': 'Mozilla/5.0'
-      }
-    });
+    const feed = await parser.parseURL(
+      'https://g1.globo.com/rss/g1/ce/ceara/'
+    );
 
-    let xml = response.data;
-
-    // 🔥 CORREÇÃO CRÍTICA: remove lixo antes do <rss
-    const rssIndex = xml.indexOf('<rss');
-    if (rssIndex === -1) {
-      throw new Error('RSS inválido');
-    }
-
-    xml = xml.slice(rssIndex);
-
-    const feed = await parser.parseString(xml);
-
-    const noticias = feed.items.slice(0, 6).map(item => ({
-      titulo: item.title || '',
-      resumo:
-        item.contentSnippet ||
-        item.content ||
-        '',
+    const noticias = feed.items.slice(0, 10).map(item => ({
+      titulo: item.title,
+      resumo: item.contentSnippet || '',
+      imagem:
+        item.enclosure?.url ||
+        'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/G1_logo.svg/2560px-G1_logo.svg.png'
     }));
 
     res.json(noticias);
   } catch (err) {
-    console.error('Erro RSS:', err.message);
-    res.json([]); // nunca quebra o player
+    console.error('Erro RSS:', err);
+    res.json([]);
   }
 });
 
