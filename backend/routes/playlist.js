@@ -1,105 +1,87 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database');
+const fetchNoticias = require('./noticias-helper'); // helper que já existia
 
-/* ==========================
-   PLAYLIST DA TV
-========================== */
-router.get('/:tvId', (req, res) => {
-  const { tvId } = req.params;
+router.get('/:tv', async (req, res) => {
+  const { tv } = req.params;
 
-  db.all(
-    `
-    SELECT
-      tipo,
-      url,
-      duracao,
-      titulo,
-      resumo
-    FROM midias
-    WHERE tv_id = ?
-      AND ativo = 1
-    ORDER BY ordem ASC
-    `,
-    [tvId],
-    (err, midias) => {
-      if (err) {
-        console.error('Erro playlist:', err);
-        return res.status(500).json([]);
-      }
-
-      /* ==========================
-         FILTRO CRÍTICO (ANTI-REGRESSÃO)
-      ========================== */
-      const midiasValidas = midias.filter(m => {
-        // ❌ ignora mídia antiga/local
-        if (!m.url) return false;
-        if (m.url.startsWith('/uploads')) return false;
-
-        // ✅ aceita apenas R2 (URL pública)
-        if (!m.url.startsWith('https://')) return false;
-
-        return true;
-      });
-
-      /* ==========================
-         SE NÃO TEM MÍDIA, NÃO QUEBRA
-      ========================== */
-      if (!midiasValidas.length) {
-        return res.json([]);
-      }
-
-      /* ==========================
-         BUSCAR NOTÍCIAS (RSS / CACHE)
-         ⚠️ NÃO MEXEMOS NISSO
-      ========================== */
+  try {
+    // 1️⃣ Buscar anúncios (SEM titulo/resumo)
+    const midias = await new Promise((resolve, reject) => {
       db.all(
         `
         SELECT
-          titulo,
-          resumo
-        FROM noticias
-        ORDER BY id DESC
-        LIMIT 10
+          id,
+          tipo,
+          url,
+          duracao
+        FROM midias
+        WHERE tv_id = ?
+          AND ativo = 1
+        ORDER BY ordem ASC
         `,
-        [],
-        (err2, noticias) => {
-          if (err2) {
-            console.error('Erro notícias:', err2);
-            noticias = [];
-          }
-
-          const playlistFinal = [];
-          let contador = 0;
-          let indiceNoticia = 0;
-
-          midiasValidas.forEach(midia => {
-            playlistFinal.push(midia);
-            contador++;
-
-            // 🔁 NOTÍCIA A CADA 2 ANÚNCIOS (COMO ERA ANTES)
-            if (
-              contador % 2 === 0 &&
-              noticias.length > 0
-            ) {
-              const noticia = noticias[indiceNoticia % noticias.length];
-
-              playlistFinal.push({
-                tipo: 'noticia',
-                titulo: noticia.titulo,
-                resumo: noticia.resumo,
-                duracao: 10
-              });
-
-              indiceNoticia++;
-            }
-          });
-
-          res.json(playlistFinal);
+        [tv],
+        (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows || []);
         }
       );
+    });
+
+    // 2️⃣ Filtrar apenas URLs válidas (R2)
+    const anuncios = midias.filter(m =>
+      m.url && m.url.startsWith('https://')
+    );
+
+    // 3️⃣ Buscar notícias
+    let noticias = [];
+    try {
+      noticias = await fetchNoticias(tv);
+    } catch (e) {
+      noticias = [];
     }
-  );
+
+    // 4️⃣ Montar playlist intercalada
+    const playlist = [];
+    let contador = 0;
+
+    anuncios.forEach(anuncio => {
+      playlist.push({
+        tipo: anuncio.tipo,
+        url: anuncio.url,
+        duracao: anuncio.duracao || 10
+      });
+
+      contador++;
+
+      // a cada 2 anúncios entra 1 notícia
+      if (contador % 2 === 0 && noticias.length) {
+        const noticia = noticias.shift();
+        playlist.push({
+          tipo: 'noticia',
+          titulo: noticia.titulo,
+          resumo: noticia.resumo,
+          imagem: noticia.imagem,
+          duracao: 12
+        });
+      }
+    });
+
+    // 5️⃣ Fallback absoluto (nunca tela preta)
+    if (!playlist.length) {
+      playlist.push({
+        tipo: 'imagem',
+        url: '/img/fallback.jpg',
+        duracao: 10
+      });
+    }
+
+    res.json(playlist);
+  } catch (err) {
+    console.error('Erro playlist:', err);
+    res.json([]);
+  }
 });
 
 module.exports = router;
