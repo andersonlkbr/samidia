@@ -59,7 +59,12 @@ async function carregarMidias() {
   if (!tvAtual) return;
 
   const res = await fetch(`/api/midia/${tvAtual}`);
-  midiasAtuais = await res.json();
+  const data = await res.json();
+
+  // ✅ COMPATÍVEL COM RESPOSTA ANTIGA E NOVA
+  midiasAtuais = Array.isArray(data)
+    ? data
+    : data.midias || [];
 
   listaMidias.innerHTML = '';
 
@@ -73,7 +78,7 @@ async function carregarMidias() {
     thumb.className = 'thumb';
     thumb.innerHTML =
       m.tipo === 'imagem'
-        ? `<img src="${m.url}">`
+        ? `<img src="${m.url}" />`
         : '🎥 Vídeo';
 
     const info = document.createElement('div');
@@ -103,7 +108,6 @@ async function carregarMidias() {
     card.appendChild(actions);
 
     adicionarDragEventos(card);
-
     listaMidias.appendChild(card);
   });
 }
@@ -121,7 +125,7 @@ function adicionarDragEventos(el) {
 
   el.addEventListener('dragend', async () => {
     el.classList.remove('dragging');
-    salvarOrdem();
+    await salvarOrdem();
   });
 
   el.addEventListener('dragover', e => {
@@ -204,4 +208,7 @@ async function enviarMidia() {
   await carregarMidias();
 }
 
+/* ==========================
+   INIT
+========================== */
 carregarTVs();
