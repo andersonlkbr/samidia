@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database');
-const fetch = require('node-fetch');
 
 router.get('/:tv', async (req, res) => {
   const { tv } = req.params;
@@ -51,7 +50,6 @@ router.get('/:tv', async (req, res) => {
     let contador = 0;
 
     anuncios.forEach(anuncio => {
-      // segurança absoluta
       if (!anuncio.url) return;
 
       playlist.push({
@@ -76,7 +74,7 @@ router.get('/:tv', async (req, res) => {
     });
 
     /* ==========================
-       4️⃣ FALLBACK FINAL
+       4️⃣ FALLBACK
     ========================== */
     if (!playlist.length) {
       playlist.push({
