@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database');
+const Parser = require('rss-parser');
+
+const parser = new Parser();
 
 router.get('/:tv', async (req, res) => {
   const { tv } = req.params;
@@ -30,15 +33,23 @@ router.get('/:tv', async (req, res) => {
     });
 
     /* ==========================
-       2️⃣ BUSCAR NOTÍCIAS (API REAL)
+       2️⃣ BUSCAR NOTÍCIAS (RSS DIRETO)
     ========================== */
     let noticias = [];
     try {
-      const resp = await fetch(
-        `${process.env.BASE_URL || 'http://localhost:3000'}/api/noticias/${tv}`
+      const feed = await parser.parseURL(
+        'https://g1.globo.com/rss/g1/ce/ceara/'
       );
-      noticias = await resp.json();
-    } catch {
+
+      noticias = feed.items.slice(0, 10).map(item => ({
+        titulo: item.title,
+        resumo: item.contentSnippet || '',
+        imagem:
+          item.enclosure?.url ||
+          'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/G1_logo.svg/2560px-G1_logo.svg.png'
+      }));
+    } catch (e) {
+      console.error('Erro RSS playlist:', e);
       noticias = [];
     }
 
@@ -48,6 +59,7 @@ router.get('/:tv', async (req, res) => {
     ========================== */
     const playlist = [];
     let contador = 0;
+    let idxNoticia = 0;
 
     anuncios.forEach(anuncio => {
       if (!anuncio.url) return;
@@ -61,7 +73,8 @@ router.get('/:tv', async (req, res) => {
       contador++;
 
       if (contador % 2 === 0 && noticias.length) {
-        const noticia = noticias.shift();
+        const noticia = noticias[idxNoticia % noticias.length];
+        idxNoticia++;
 
         playlist.push({
           tipo: 'noticia',
