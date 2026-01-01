@@ -1,18 +1,19 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database');
-const fetchNoticias = require('./noticias-helper'); // helper que já existia
+const fetch = require('node-fetch');
 
 router.get('/:tv', async (req, res) => {
   const { tv } = req.params;
 
   try {
-    // 1️⃣ Buscar anúncios (SEM titulo/resumo)
-    const midias = await new Promise((resolve, reject) => {
+    /* ==========================
+       1️⃣ BUSCAR ANÚNCIOS
+    ========================== */
+    const anuncios = await new Promise((resolve, reject) => {
       db.all(
         `
         SELECT
-          id,
           tipo,
           url,
           duracao
@@ -29,24 +30,30 @@ router.get('/:tv', async (req, res) => {
       );
     });
 
-    // 2️⃣ Filtrar apenas URLs válidas (R2)
-    const anuncios = midias.filter(m =>
-      m.url && m.url.startsWith('https://')
-    );
-
-    // 3️⃣ Buscar notícias
+    /* ==========================
+       2️⃣ BUSCAR NOTÍCIAS (API REAL)
+    ========================== */
     let noticias = [];
     try {
-      noticias = await fetchNoticias(tv);
-    } catch (e) {
+      const resp = await fetch(
+        `${process.env.BASE_URL || 'http://localhost:3000'}/api/noticias/${tv}`
+      );
+      noticias = await resp.json();
+    } catch {
       noticias = [];
     }
 
-    // 4️⃣ Montar playlist intercalada
+    /* ==========================
+       3️⃣ MONTAR PLAYLIST
+       (2 anúncios → 1 notícia)
+    ========================== */
     const playlist = [];
     let contador = 0;
 
     anuncios.forEach(anuncio => {
+      // segurança absoluta
+      if (!anuncio.url) return;
+
       playlist.push({
         tipo: anuncio.tipo,
         url: anuncio.url,
@@ -55,9 +62,9 @@ router.get('/:tv', async (req, res) => {
 
       contador++;
 
-      // a cada 2 anúncios entra 1 notícia
       if (contador % 2 === 0 && noticias.length) {
         const noticia = noticias.shift();
+
         playlist.push({
           tipo: 'noticia',
           titulo: noticia.titulo,
@@ -68,7 +75,9 @@ router.get('/:tv', async (req, res) => {
       }
     });
 
-    // 5️⃣ Fallback absoluto (nunca tela preta)
+    /* ==========================
+       4️⃣ FALLBACK FINAL
+    ========================== */
     if (!playlist.length) {
       playlist.push({
         tipo: 'imagem',
