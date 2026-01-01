@@ -1,128 +1,105 @@
-/* ==========================
-   PARAMS
-========================== */
 const params = new URLSearchParams(window.location.search);
 const tvId = params.get('tv');
 
+const container = document.getElementById('container');
+
 let playlist = [];
-let index = 0;
+let indexAtual = 0;
+let contadorAnuncios = 0;
 
-const conteudo = document.getElementById('conteudo');
-const dataHoraEl = document.getElementById('dataHora');
-const climaEl = document.getElementById('clima');
-
-/* ==========================
-   DATA E HORA
-========================== */
-function atualizarHora() {
-  const agora = new Date();
-  dataHoraEl.textContent =
-    agora.toLocaleDateString('pt-BR') +
-    ' • ' +
-    agora.toLocaleTimeString('pt-BR');
-}
-
-setInterval(atualizarHora, 1000);
-atualizarHora();
-
-/* ==========================
-   CLIMA
-========================== */
-async function carregarClima() {
-  try {
-    const res = await fetch(`/api/clima/${tvId}?t=${Date.now()}`);
-    const dados = await res.json();
-
-    climaEl.textContent =
-      `${dados.cidade} • ${dados.temperatura}°C • ${dados.descricao}`;
-  } catch {
-    climaEl.textContent = 'Clima indisponível';
-  }
-}
-
-carregarClima();
-setInterval(carregarClima, 10 * 60 * 1000);
-
-/* ==========================
-   PLAYLIST (ANTI-CACHE)
-========================== */
 async function carregarPlaylist() {
-  playlist = [];
-  index = 0;
-
-  const res = await fetch(`/api/playlist/${tvId}?t=${Date.now()}`);
+  const res = await fetch(`/api/playlist/${tvId}`);
   playlist = await res.json();
 }
 
+async function carregarNoticias() {
+  const res = await fetch(`/api/noticias/${tvId}`);
+  return await res.json();
+}
+
+function limparContainer() {
+  container.innerHTML = '';
+}
+
 /* ==========================
-   EXIBIÇÃO
+   RENDER ANÚNCIO
 ========================== */
-function mostrarItem() {
-  if (!playlist.length) return;
+function renderMidia(item) {
+  limparContainer();
 
-  const item = playlist[index];
-  conteudo.innerHTML = '';
-
-  // Fade in
-  conteudo.classList.remove('show');
-  void conteudo.offsetWidth;
-  conteudo.classList.add('show');
-
-  /* 🖼 IMAGEM */
   if (item.tipo === 'imagem') {
     const img = document.createElement('img');
-    img.src = item.url + `?t=${Date.now()}`;
-    img.onload = () => {
-      setTimeout(proximo, item.duracao * 1000);
-    };
-    conteudo.appendChild(img);
+    img.src = item.url;
+    img.className = 'midia';
+    container.appendChild(img);
   }
 
-  /* 🎥 VÍDEO */
   if (item.tipo === 'video') {
     const video = document.createElement('video');
     video.src = item.url;
     video.autoplay = true;
     video.muted = true;
     video.playsInline = true;
-
-    video.onended = proximo;
-    conteudo.appendChild(video);
-  }
-
-  /* 📰 NOTÍCIA */
-  if (item.tipo === 'noticia') {
-    const box = document.createElement('div');
-    box.className = 'noticia-box';
-
-    box.innerHTML = `
-      <div class="noticia-header">NOTÍCIAS</div>
-      <div class="noticia-titulo">${item.titulo}</div>
-      <div class="noticia-resumo">${item.resumo}</div>
-    `;
-
-    conteudo.appendChild(box);
-    setTimeout(proximo, item.duracao * 1000);
+    video.className = 'midia';
+    container.appendChild(video);
   }
 }
 
-function proximo() {
-  index = (index + 1) % playlist.length;
-  mostrarItem();
+/* ==========================
+   RENDER NOTÍCIA (BOX LINDO)
+========================== */
+function renderNoticia(noticia) {
+  limparContainer();
+
+  container.innerHTML = `
+    <div class="news-box fade-in">
+      <div class="news-header">
+        <span class="news-badge">NEWS</span>
+      </div>
+
+      <div class="news-content">
+        <div class="news-image">
+          <img src="${noticia.imagem}" alt="Notícia">
+        </div>
+
+        <div class="news-text">
+          <h1>${noticia.titulo}</h1>
+          <p>${noticia.resumo}</p>
+        </div>
+      </div>
+    </div>
+  `;
 }
 
 /* ==========================
-   INIT
+   LOOP PRINCIPAL
 ========================== */
-(async () => {
-  await carregarPlaylist();
-  mostrarItem();
-})();
+async function tocar() {
+  if (!playlist.length) {
+    await carregarPlaylist();
+  }
 
-/* ==========================
-   WATCHDOG (ANTI-ESTADO ZUMBI)
-========================== */
-// Recarrega o player a cada 30 min para garantir estado limpo
-setInterval(() => {
-  location.reload();
-}, 30 * 60 * 1000);
+  if (!playlist.length) return;
+
+  // A cada 2 anúncios, mostra notícia
+  if (contadorAnuncios === 2) {
+    contadorAnuncios = 0;
+    const noticias = await carregarNoticias();
+
+    if (noticias.length) {
+      renderNoticia(noticias[0]);
+      setTimeout(tocar, 10000);
+      return;
+    }
+  }
+
+  const item = playlist[indexAtual];
+  renderMidia(item);
+
+  contadorAnuncios++;
+  indexAtual = (indexAtual + 1) % playlist.length;
+
+  setTimeout(tocar, item.duracao * 1000);
+}
+
+carregarPlaylist().then(tocar);
