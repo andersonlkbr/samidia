@@ -22,7 +22,10 @@ const r2 = new S3Client({
    MULTER (MEMORY)
 ========================== */
 const upload = multer({
-  storage: multer.memoryStorage()
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 500 * 1024 * 1024 // até 500MB
+  }
 });
 
 /* ==========================
@@ -65,14 +68,17 @@ router.post('/:tvId', upload.single('arquivo'), async (req, res) => {
     const ext = path.extname(req.file.originalname).toLowerCase();
     const tipo = ['.mp4', '.webm'].includes(ext) ? 'video' : 'imagem';
 
-    const nomeArquivo = `midias/${Date.now()}-${Math.random()}${ext}`;
+    const nomeArquivo = `midias/${Date.now()}-${Math.random()
+      .toString(36)
+      .slice(2)}${ext}`;
 
     await r2.send(
       new PutObjectCommand({
         Bucket: process.env.R2_BUCKET,
         Key: nomeArquivo,
         Body: req.file.buffer,
-        ContentType: req.file.mimetype
+        ContentType: req.file.mimetype,
+        CacheControl: 'public, max-age=31536000, immutable'
       })
     );
 
@@ -90,7 +96,11 @@ router.post('/:tvId', upload.single('arquivo'), async (req, res) => {
           return res.status(500).json({ erro: 'Erro ao salvar mídia' });
         }
 
-        res.json({ ok: true, id: this.lastID, url });
+        res.json({
+          ok: true,
+          id: this.lastID,
+          url
+        });
       }
     );
   } catch (err) {
@@ -111,6 +121,7 @@ router.put('/:id', (req, res) => {
     [ativo ? 1 : 0, id],
     err => {
       if (err) {
+        console.error('Erro atualizar mídia:', err);
         return res.status(500).json({ erro: 'Erro ao atualizar mídia' });
       }
       res.json({ ok: true });
@@ -122,11 +133,14 @@ router.put('/:id', (req, res) => {
    EXCLUIR
 ========================== */
 router.delete('/:id', (req, res) => {
+  const { id } = req.params;
+
   db.run(
     `DELETE FROM midias WHERE id = ?`,
-    [req.params.id],
+    [id],
     err => {
       if (err) {
+        console.error('Erro excluir mídia:', err);
         return res.status(500).json({ erro: 'Erro ao excluir mídia' });
       }
       res.json({ ok: true });
@@ -140,6 +154,10 @@ router.delete('/:id', (req, res) => {
 router.put('/ordenar', (req, res) => {
   const { ids } = req.body;
 
+  if (!Array.isArray(ids)) {
+    return res.status(400).json({ erro: 'IDs inválidos' });
+  }
+
   const stmt = db.prepare(
     `UPDATE midias SET ordem = ? WHERE id = ?`
   );
@@ -149,7 +167,6 @@ router.put('/ordenar', (req, res) => {
   });
 
   stmt.finalize();
-
   res.json({ ok: true });
 });
 
