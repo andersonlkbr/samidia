@@ -1,10 +1,22 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
 const db = require('../db');
-const uploadR2 = require('../utils/uploadR2');
 
 const router = express.Router();
+
+/* ==========================
+   R2 CLIENT
+========================== */
+const r2 = new S3Client({
+  region: 'auto',
+  endpoint: process.env.R2_ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY,
+    secretAccessKey: process.env.R2_SECRET_KEY
+  }
+});
 
 /* ==========================
    MULTER (MEMORY)
@@ -53,7 +65,18 @@ router.post('/:tvId', upload.single('arquivo'), async (req, res) => {
     const ext = path.extname(req.file.originalname).toLowerCase();
     const tipo = ['.mp4', '.webm'].includes(ext) ? 'video' : 'imagem';
 
-    const url = await uploadR2(req.file);
+    const nomeArquivo = `midias/${Date.now()}-${Math.random()}${ext}`;
+
+    await r2.send(
+      new PutObjectCommand({
+        Bucket: process.env.R2_BUCKET,
+        Key: nomeArquivo,
+        Body: req.file.buffer,
+        ContentType: req.file.mimetype
+      })
+    );
+
+    const url = `${process.env.R2_PUBLIC_URL}/${nomeArquivo}`;
 
     db.run(
       `
@@ -67,7 +90,7 @@ router.post('/:tvId', upload.single('arquivo'), async (req, res) => {
           return res.status(500).json({ erro: 'Erro ao salvar mídia' });
         }
 
-        res.json({ ok: true, id: this.lastID });
+        res.json({ ok: true, id: this.lastID, url });
       }
     );
   } catch (err) {
@@ -126,6 +149,7 @@ router.put('/ordenar', (req, res) => {
   });
 
   stmt.finalize();
+
   res.json({ ok: true });
 });
 
