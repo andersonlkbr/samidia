@@ -26,7 +26,7 @@ const upload = multer({
 });
 
 /* ==========================
-   LISTAR MÍDIAS
+   LISTAR MÍDIAS DA TV
 ========================== */
 router.get('/:tvId', (req, res) => {
   const { tvId } = req.params;
@@ -97,6 +97,60 @@ router.post('/:tvId', upload.single('arquivo'), async (req, res) => {
     console.error('Erro upload mídia:', err);
     res.status(500).json({ erro: 'Erro no upload' });
   }
+});
+
+/* ==========================
+   ATIVAR / DESATIVAR
+========================== */
+router.put('/:id', (req, res) => {
+  const { id } = req.params;
+  const { ativo } = req.body;
+
+  db.run(
+    `UPDATE midias SET ativo = ? WHERE id = ?`,
+    [ativo ? 1 : 0, id],
+    err => {
+      if (err) {
+        return res.status(500).json({ erro: 'Erro ao atualizar mídia' });
+      }
+      res.json({ ok: true });
+    }
+  );
+});
+
+/* ==========================
+   EXCLUIR
+========================== */
+router.delete('/:id', (req, res) => {
+  db.run(
+    `DELETE FROM midias WHERE id = ?`,
+    [req.params.id],
+    err => {
+      if (err) {
+        return res.status(500).json({ erro: 'Erro ao excluir mídia' });
+      }
+      res.json({ ok: true });
+    }
+  );
+});
+
+/* ==========================
+   ORDENAR
+========================== */
+router.put('/ordenar', (req, res) => {
+  const { ids } = req.body;
+
+  const stmt = db.prepare(
+    `UPDATE midias SET ordem = ? WHERE id = ?`
+  );
+
+  ids.forEach((id, index) => {
+    stmt.run(index, id);
+  });
+
+  stmt.finalize();
+
+  res.json({ ok: true });
 });
 
 module.exports = router;
