@@ -1,32 +1,11 @@
 const express = require('express');
 const multer = require('multer');
-const path = require('path');
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-const db = require('../db');
+const { v4: uuidv4 } = require('uuid');
+const db = require('../database');
+const uploadR2 = require('../utils/uploadR2');
 
 const router = express.Router();
-
-/* ==========================
-   R2 CLIENT
-========================== */
-const r2 = new S3Client({
-  region: 'auto',
-  endpoint: process.env.R2_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY,
-    secretAccessKey: process.env.R2_SECRET_KEY
-  }
-});
-
-/* ==========================
-   MULTER (MEMORY)
-========================== */
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 500 * 1024 * 1024 // até 500MB
-  }
-});
+const upload = multer({ storage: multer.memoryStorage() });
 
 /* ==========================
    LISTAR MÍDIAS DA TV
@@ -45,16 +24,15 @@ router.get('/:tvId', (req, res) => {
     (err, rows) => {
       if (err) {
         console.error('Erro listar mídias:', err);
-        return res.status(500).json({ erro: 'Erro no banco' });
+        return res.status(500).json({ erro: 'Erro ao listar mídias' });
       }
-
-      res.json({ midias: rows || [] });
+      res.json(rows);
     }
   );
 });
 
 /* ==========================
-   UPLOAD (R2)
+   UPLOAD DE MÍDIA (R2)
 ========================== */
 router.post('/:tvId', upload.single('arquivo'), async (req, res) => {
   try {
@@ -65,47 +43,35 @@ router.post('/:tvId', upload.single('arquivo'), async (req, res) => {
       return res.status(400).json({ erro: 'Arquivo não enviado' });
     }
 
-    const ext = path.extname(req.file.originalname).toLowerCase();
-    const tipo = ['.mp4', '.webm'].includes(ext) ? 'video' : 'imagem';
+    const tipo = req.file.mimetype.startsWith('video')
+      ? 'video'
+      : 'imagem';
 
-    const nomeArquivo = `midias/${Date.now()}-${Math.random()
-      .toString(36)
-      .slice(2)}${ext}`;
+    // Upload para R2
+    const url = await uploadR2(req.file);
 
-    await r2.send(
-      new PutObjectCommand({
-        Bucket: process.env.R2_BUCKET,
-        Key: nomeArquivo,
-        Body: req.file.buffer,
-        ContentType: req.file.mimetype,
-        CacheControl: 'public, max-age=31536000, immutable'
-      })
-    );
-
-    const url = `${process.env.R2_PUBLIC_URL}/${nomeArquivo}`;
+    const id = uuidv4();
 
     db.run(
       `
-      INSERT INTO midias (tv_id, tipo, url, duracao, regiao, ativo)
-      VALUES (?, ?, ?, ?, ?, 1)
+      INSERT INTO midias
+        (id, tv_id, tipo, url, duracao, regiao, ativo, ordem)
+      VALUES (?, ?, ?, ?, ?, ?, 1,
+        (SELECT IFNULL(MAX(ordem), 0) + 1 FROM midias WHERE tv_id = ?)
+      )
       `,
-      [tvId, tipo, url, duracao || 10, regiao || null],
-      function (err) {
+      [id, tvId, tipo, url, duracao || 10, regiao || 'BR', tvId],
+      err => {
         if (err) {
           console.error('Erro salvar mídia:', err);
           return res.status(500).json({ erro: 'Erro ao salvar mídia' });
         }
-
-        res.json({
-          ok: true,
-          id: this.lastID,
-          url
-        });
+        res.json({ ok: true });
       }
     );
-  } catch (err) {
-    console.error('Erro upload mídia:', err);
-    res.status(500).json({ erro: 'Erro no upload' });
+  } catch (e) {
+    console.error('Erro upload mídia:', e);
+    res.status(500).json({ erro: 'Falha no upload' });
   }
 });
 
@@ -117,11 +83,11 @@ router.put('/:id', (req, res) => {
   const { ativo } = req.body;
 
   db.run(
-    `UPDATE midias SET ativo = ? WHERE id = ?`,
+    'UPDATE midias SET ativo = ? WHERE id = ?',
     [ativo ? 1 : 0, id],
     err => {
       if (err) {
-        console.error('Erro atualizar mídia:', err);
+        console.error(err);
         return res.status(500).json({ erro: 'Erro ao atualizar mídia' });
       }
       res.json({ ok: true });
@@ -130,17 +96,17 @@ router.put('/:id', (req, res) => {
 });
 
 /* ==========================
-   EXCLUIR
+   EXCLUIR MÍDIA
 ========================== */
 router.delete('/:id', (req, res) => {
   const { id } = req.params;
 
   db.run(
-    `DELETE FROM midias WHERE id = ?`,
+    'DELETE FROM midias WHERE id = ?',
     [id],
     err => {
       if (err) {
-        console.error('Erro excluir mídia:', err);
+        console.error(err);
         return res.status(500).json({ erro: 'Erro ao excluir mídia' });
       }
       res.json({ ok: true });
@@ -149,21 +115,17 @@ router.delete('/:id', (req, res) => {
 });
 
 /* ==========================
-   ORDENAR
+   ORDENAR MÍDIAS
 ========================== */
 router.put('/ordenar', (req, res) => {
   const { ids } = req.body;
 
-  if (!Array.isArray(ids)) {
-    return res.status(400).json({ erro: 'IDs inválidos' });
-  }
-
   const stmt = db.prepare(
-    `UPDATE midias SET ordem = ? WHERE id = ?`
+    'UPDATE midias SET ordem = ? WHERE id = ?'
   );
 
   ids.forEach((id, index) => {
-    stmt.run(index, id);
+    stmt.run(index + 1, id);
   });
 
   stmt.finalize();
