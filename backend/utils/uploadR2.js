@@ -1,38 +1,56 @@
-const { S3Client, PutObjectCommand } = require('@aws-sdk/client-s3');
-const crypto = require('crypto');
-const path = require('path');
+const { S3Client, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
 
-if (
-  !process.env.R2_ENDPOINT ||
-  !process.env.R2_ACCESS_KEY_ID ||
-  !process.env.R2_SECRET_ACCESS_KEY ||
-  !process.env.R2_BUCKET ||
-  !process.env.R2_PUBLIC_URL
-) {
-  throw new Error('❌ Variáveis do R2 não configuradas corretamente');
+const {
+  R2_ACCOUNT_ID,
+  R2_ACCESS_KEY,
+  R2_SECRET_KEY,
+  R2_BUCKET,
+  R2_PUBLIC_URL
+} = process.env;
+
+if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY || !R2_SECRET_KEY || !R2_BUCKET || !R2_PUBLIC_URL) {
+  throw new Error("❌ Variáveis do R2 não configuradas corretamente");
 }
 
-const client = new S3Client({
-  region: 'auto',
-  endpoint: process.env.R2_ENDPOINT,
+const s3 = new S3Client({
+  region: "auto",
+  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
   credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID.trim(),
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY.trim()
+    accessKeyId: R2_ACCESS_KEY,
+    secretAccessKey: R2_SECRET_KEY
   }
 });
 
-module.exports = async function uploadR2(file) {
-  const ext = path.extname(file.originalname).toLowerCase();
-  const nome = `${Date.now()}-${crypto.randomUUID()}${ext}`;
+async function uploadToR2(fileBuffer, fileName, mimeType) {
+  const key = `midia/${Date.now()}-${fileName}`;
 
-  const command = new PutObjectCommand({
-    Bucket: process.env.R2_BUCKET,
-    Key: nome,
-    Body: file.buffer,
-    ContentType: file.mimetype
-  });
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: key,
+      Body: fileBuffer,
+      ContentType: mimeType
+    })
+  );
 
-  await client.send(command);
+  return `${R2_PUBLIC_URL}/${key}`;
+}
 
-  return `${process.env.R2_PUBLIC_URL}/${nome}`;
+async function deleteFromR2(url) {
+  if (!url) return;
+
+  const key = url.split(`${R2_PUBLIC_URL}/`)[1];
+  if (!key) return;
+
+  await s3.send(
+    new DeleteObjectCommand({
+      Bucket: R2_BUCKET,
+      Key: key
+    })
+  );
+}
+
+module.exports = {
+  uploadToR2,
+  deleteFromR2
 };
