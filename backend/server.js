@@ -21,13 +21,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Uploads de imagens e vídeos
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+const midiaRoutes = require("./routes/midia");
+app.use("/api/midia", midiaRoutes);
 
 /* ==========================
    ROTAS DA API
 ========================== */
 app.use('/api/tv', require('./routes/tv'));
-app.use('/api/midia', require('./routes/midia'));     // upload / playlist
 app.use('/api/noticias', require('./routes/noticias'));
 app.use('/api/clima', require('./routes/clima'));
 app.use('/api/ping', require('./routes/ping'));
