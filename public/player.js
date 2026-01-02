@@ -6,77 +6,128 @@ const conteudo = document.getElementById("conteudo");
 let playlist = [];
 let noticias = [];
 let indice = 0;
-let contadorAnuncios = 0;
+let anunciosRodados = 0;
 
-async function carregarDados() {
-  const p = await fetch(`/api/playlist/${tvId}`).then(r => r.json());
-  const n = await fetch(`/api/noticias/${tvId}`).then(r => r.json());
+/* =========================
+   UTIL
+========================= */
+function fadeOut() {
+  conteudo.style.opacity = 0;
+}
 
-  playlist = p;
-  noticias = n;
+function fadeIn() {
+  conteudo.style.opacity = 1;
 }
 
 function limpar() {
   conteudo.innerHTML = "";
 }
 
+function resumoCurto(texto, limite = 280) {
+  if (!texto) return "";
+  return texto.length > limite
+    ? texto.slice(0, limite) + "…"
+    : texto;
+}
+
+/* =========================
+   CARREGAR DADOS
+========================= */
+async function carregarDados() {
+  playlist = await fetch(`/api/playlist/${tvId}`).then(r => r.json());
+  noticias = await fetch(`/api/noticias/${tvId}`).then(r => r.json());
+}
+
+/* =========================
+   RENDER MIDIA
+========================= */
 function renderMidia(item) {
-  limpar();
+  fadeOut();
 
-  if (item.tipo === "imagem") {
-    const img = document.createElement("img");
-    img.src = item.url;
-    img.className = "midia-img";
-    conteudo.appendChild(img);
+  setTimeout(() => {
+    limpar();
 
-    setTimeout(tocar, item.duracao * 1000);
-  }
+    if (item.tipo === "imagem") {
+      const img = document.createElement("img");
+      img.src = item.url;
+      img.className = "midia-img";
 
-  if (item.tipo === "video") {
-    const video = document.createElement("video");
-    video.src = item.url;
-    video.autoplay = true;
-    video.muted = true;
-    video.className = "midia-video";
+      img.onerror = () => {
+        img.src = "/fallback.jpg";
+        img.classList.add("fallback");
+      };
 
-    video.onended = tocar;
-    conteudo.appendChild(video);
-  }
+      conteudo.appendChild(img);
+      fadeIn();
+
+      setTimeout(tocar, item.duracao * 1000);
+    }
+
+    if (item.tipo === "video") {
+      const video = document.createElement("video");
+      video.src = item.url;
+      video.autoplay = true;
+      video.muted = true;
+      video.className = "midia-video";
+
+      video.onended = tocar;
+
+      conteudo.appendChild(video);
+      fadeIn();
+    }
+
+  }, 600);
 }
 
-function renderNoticia(n) {
-  limpar();
+/* =========================
+   RENDER NOTÍCIA
+========================= */
+function renderNoticia(noticia) {
+  fadeOut();
 
-  const box = document.createElement("div");
-  box.className = "noticia-box";
+  setTimeout(() => {
+    limpar();
 
-  box.innerHTML = `
-    <div class="noticia-tag">NOTÍCIAS</div>
-    <div class="noticia-titulo">${n.titulo}</div>
-    <div class="noticia-texto">${n.resumo}</div>
-  `;
+    const box = document.createElement("div");
+    box.className = "noticia-box";
 
-  conteudo.appendChild(box);
+    box.innerHTML = `
+      <div class="noticia-tag">NOTÍCIAS</div>
+      <div class="noticia-titulo">${noticia.titulo}</div>
+      <div class="noticia-resumo">
+        ${resumoCurto(noticia.resumo)}
+      </div>
+    `;
 
-  setTimeout(tocar, 10000);
+    conteudo.appendChild(box);
+    fadeIn();
+
+    setTimeout(tocar, 10000);
+  }, 600);
 }
 
+/* =========================
+   PLAYER LOOP
+========================= */
 function tocar() {
   if (!playlist.length) return;
 
-  if (contadorAnuncios === 2 && noticias.length) {
-    contadorAnuncios = 0;
-    const n = noticias[Math.floor(Math.random() * noticias.length)];
-    return renderNoticia(n);
+  if (anunciosRodados === 2 && noticias.length) {
+    anunciosRodados = 0;
+    const noticia = noticias[Math.floor(Math.random() * noticias.length)];
+    return renderNoticia(noticia);
   }
 
   const item = playlist[indice];
   indice = (indice + 1) % playlist.length;
-  contadorAnuncios++;
+  anunciosRodados++;
 
   renderMidia(item);
 }
 
+/* =========================
+   RODAPÉ
+========================= */
 function atualizarRodape() {
   const agora = new Date();
   document.getElementById("dataHora").innerText =
@@ -87,11 +138,15 @@ function atualizarRodape() {
     .then(c => {
       document.getElementById("clima").innerText =
         `${c.cidade} • ${c.temp}°C • ${c.descricao}`;
-    });
+    })
+    .catch(() => {});
 }
 
 setInterval(atualizarRodape, 60000);
 
+/* =========================
+   START
+========================= */
 (async () => {
   await carregarDados();
   atualizarRodape();
