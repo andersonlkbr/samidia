@@ -1,105 +1,158 @@
-const params = new URLSearchParams(window.location.search);
-const tvId = params.get('tv');
-
-const container = document.getElementById('container');
-
 let playlist = [];
-let indexAtual = 0;
-let contadorAnuncios = 0;
+let noticias = [];
+let indice = 0;
+let contadorMidias = 0;
 
-async function carregarPlaylist() {
-  const res = await fetch(`/api/playlist/${tvId}`);
-  playlist = await res.json();
-}
+let conteudo = null;
 
-async function carregarNoticias() {
-  const res = await fetch(`/api/noticias/${tvId}`);
-  return await res.json();
-}
+const tvId = new URLSearchParams(window.location.search).get('tv');
 
-function limparContainer() {
-  container.innerHTML = '';
+/* ==========================
+   INIT
+========================== */
+document.addEventListener('DOMContentLoaded', async () => {
+  conteudo = document.getElementById('conteudo');
+
+  if (!conteudo) {
+    console.error('❌ Elemento #conteudo não encontrado no HTML');
+    return;
+  }
+
+  await carregarDados();
+  tocar();
+});
+
+/* ==========================
+   FETCH
+========================== */
+async function carregarDados() {
+  try {
+    const resPlaylist = await fetch(`/api/playlist/${tvId}`);
+    playlist = await resPlaylist.json();
+  } catch (e) {
+    console.error('Erro playlist', e);
+    playlist = [];
+  }
+
+  try {
+    const resNoticias = await fetch(`/api/noticias/${tvId}`);
+    noticias = await resNoticias.json();
+  } catch (e) {
+    console.error('Erro notícias', e);
+    noticias = [];
+  }
 }
 
 /* ==========================
-   RENDER ANÚNCIO
+   PLAYER LOOP
 ========================== */
-function renderMidia(item) {
-  limparContainer();
-
-  if (item.tipo === 'imagem') {
-    const img = document.createElement('img');
-    img.src = item.url;
-    img.className = 'midia';
-    container.appendChild(img);
+function tocar() {
+  if (!playlist.length) {
+    mostrarTelaVazia();
+    setTimeout(tocar, 5000);
+    return;
   }
 
-  if (item.tipo === 'video') {
-    const video = document.createElement('video');
-    video.src = item.url;
-    video.autoplay = true;
-    video.muted = true;
-    video.playsInline = true;
-    video.className = 'midia';
-    container.appendChild(video);
+  // A cada 2 mídias → notícia
+  if (contadorMidias > 0 && contadorMidias % 2 === 0 && noticias.length) {
+    mostrarNoticia();
+    contadorMidias++;
+    return;
+  }
+
+  const midia = playlist[indice];
+  indice = (indice + 1) % playlist.length;
+  contadorMidias++;
+
+  renderMidia(midia);
+}
+
+/* ==========================
+   RENDER
+========================== */
+function limparConteudo() {
+  conteudo.classList.remove('fade-in');
+  conteudo.innerHTML = '';
+}
+
+function renderMidia(midia) {
+  limparConteudo();
+
+  let el;
+
+  if (midia.tipo === 'imagem') {
+    el = document.createElement('img');
+    el.src = midia.url;
+    el.style.width = '100%';
+    el.style.height = '100%';
+    el.style.objectFit = 'contain';
+
+    conteudo.appendChild(el);
+    fadeIn();
+
+    setTimeout(tocar, (midia.duracao || 10) * 1000);
+  }
+
+  if (midia.tipo === 'video') {
+    el = document.createElement('video');
+    el.src = midia.url;
+    el.autoplay = true;
+    el.muted = true;
+    el.playsInline = true;
+    el.style.width = '100%';
+    el.style.height = '100%';
+    el.style.objectFit = 'contain';
+
+    el.onended = tocar;
+
+    conteudo.appendChild(el);
+    fadeIn();
   }
 }
 
 /* ==========================
-   RENDER NOTÍCIA (BOX LINDO)
+   NOTÍCIAS
 ========================== */
-function renderNoticia(noticia) {
-  limparContainer();
+function mostrarNoticia() {
+  if (!noticias.length) {
+    tocar();
+    return;
+  }
 
-  container.innerHTML = `
-    <div class="news-box fade-in">
-      <div class="news-header">
-        <span class="news-badge">NEWS</span>
-      </div>
+  const noticia = noticias.shift();
+  noticias.push(noticia);
 
-      <div class="news-content">
-        <div class="news-image">
-          <img src="${noticia.imagem}" alt="Notícia">
-        </div>
+  limparConteudo();
 
-        <div class="news-text">
-          <h1>${noticia.titulo}</h1>
-          <p>${noticia.resumo}</p>
-        </div>
-      </div>
+  const box = document.createElement('div');
+  box.className = 'noticia-box';
+
+  box.innerHTML = `
+    <div class="noticia-header">NOTÍCIAS</div>
+    <div class="noticia-titulo">${noticia.titulo}</div>
+    <div class="noticia-resumo">${noticia.resumo}</div>
+  `;
+
+  conteudo.appendChild(box);
+  fadeIn();
+
+  setTimeout(tocar, (noticia.duracao || 10) * 1000);
+}
+
+/* ==========================
+   UI
+========================== */
+function fadeIn() {
+  requestAnimationFrame(() => {
+    conteudo.classList.add('fade-in');
+  });
+}
+
+function mostrarTelaVazia() {
+  limparConteudo();
+  conteudo.innerHTML = `
+    <div style="color:white;font-size:28px;text-align:center">
+      Nenhuma mídia disponível
     </div>
   `;
 }
-
-/* ==========================
-   LOOP PRINCIPAL
-========================== */
-async function tocar() {
-  if (!playlist.length) {
-    await carregarPlaylist();
-  }
-
-  if (!playlist.length) return;
-
-  // A cada 2 anúncios, mostra notícia
-  if (contadorAnuncios === 2) {
-    contadorAnuncios = 0;
-    const noticias = await carregarNoticias();
-
-    if (noticias.length) {
-      renderNoticia(noticias[0]);
-      setTimeout(tocar, 10000);
-      return;
-    }
-  }
-
-  const item = playlist[indexAtual];
-  renderMidia(item);
-
-  contadorAnuncios++;
-  indexAtual = (indexAtual + 1) % playlist.length;
-
-  setTimeout(tocar, item.duracao * 1000);
-}
-
-carregarPlaylist().then(tocar);
