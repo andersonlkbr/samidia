@@ -126,29 +126,41 @@ function tocar() {
 }
 
 /* =========================
-   RODAPÉ
+   RODAPÉ (HORA + CLIMA)
 ========================= */
-function atualizarRodape() {
+
+function atualizarHora() {
   const agora = new Date();
   document.getElementById("dataHora").innerText =
-    agora.toLocaleDateString() + " - " + agora.toLocaleTimeString();
-
-  fetch(`/api/clima/${tvId}`)
-    .then(r => r.json())
-    .then(c => {
-      document.getElementById("clima").innerText =
-        `${c.cidade} • ${c.temp}°C • ${c.descricao}`;
-    })
-    .catch(() => {});
+    agora.toLocaleDateString("pt-BR") +
+    " • " +
+    agora.toLocaleTimeString("pt-BR");
 }
 
-setInterval(atualizarRodape, 60000);
+async function atualizarClima() {
+  try {
+    const res = await fetch(`/api/clima/${tvId}`);
+    const c = await res.json();
+
+    document.getElementById("clima").innerText =
+      `${c.cidade} • ${c.temperatura}°C • ${c.descricao}`;
+  } catch (e) {
+    document.getElementById("clima").innerText = "";
+  }
+}
+
+/* timers separados (importante) */
+setInterval(atualizarHora, 1000);       // relógio fluido
+setInterval(atualizarClima, 60000);     // clima 1x por minuto
+
 
 /* =========================
    START
 ========================= */
 (async () => {
   await carregarDados();
-  atualizarRodape();
+  atualizarHora();
+  atualizarClima();
   tocar();
 })();
+
