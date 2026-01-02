@@ -31,6 +31,29 @@ function resumoCurto(texto, limite = 280) {
 }
 
 /* =========================
+   PRELOAD
+========================= */
+function preloadMidia(midia) {
+  return new Promise(resolve => {
+    if (midia.tipo === "imagem") {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = midia.url;
+    }
+
+    if (midia.tipo === "video") {
+      const video = document.createElement("video");
+      video.preload = "auto";
+      video.oncanplaythrough = () => resolve(video);
+      video.onerror = () => resolve(null);
+      video.src = midia.url;
+      video.load();
+    }
+  });
+}
+
+/* =========================
    CARREGAR DADOS
 ========================= */
 async function carregarDados() {
@@ -39,44 +62,41 @@ async function carregarDados() {
 }
 
 /* =========================
-   RENDER MIDIA
+   RENDER MÍDIA
 ========================= */
-function renderMidia(item) {
+async function renderMidia(item) {
   fadeOut();
+
+  const elemento = await preloadMidia(item);
+  if (!elemento) return tocar();
 
   setTimeout(() => {
     limpar();
 
     if (item.tipo === "imagem") {
-      const img = document.createElement("img");
-      img.src = item.url;
-      img.className = "midia-img";
-
-      img.onerror = () => {
-        img.src = "/fallback.jpg";
-        img.classList.add("fallback");
+      elemento.className = "midia-img";
+      elemento.onerror = () => {
+        elemento.src = "/fallback.jpg";
+        elemento.classList.add("fallback");
       };
 
-      conteudo.appendChild(img);
+      conteudo.appendChild(elemento);
       fadeIn();
 
       setTimeout(tocar, item.duracao * 1000);
     }
 
     if (item.tipo === "video") {
-      const video = document.createElement("video");
-      video.src = item.url;
-      video.autoplay = true;
-      video.muted = true;
-      video.className = "midia-video";
+      elemento.className = "midia-video";
+      elemento.autoplay = true;
+      elemento.muted = true;
+      elemento.onended = tocar;
 
-      video.onended = tocar;
-
-      conteudo.appendChild(video);
+      conteudo.appendChild(elemento);
       fadeIn();
     }
 
-  }, 600);
+  }, 500);
 }
 
 /* =========================
@@ -90,7 +110,6 @@ function renderNoticia(noticia) {
 
     const box = document.createElement("div");
     box.className = "noticia-box";
-
     box.innerHTML = `
       <div class="noticia-tag">NOTÍCIAS</div>
       <div class="noticia-titulo">${noticia.titulo}</div>
@@ -103,11 +122,11 @@ function renderNoticia(noticia) {
     fadeIn();
 
     setTimeout(tocar, 10000);
-  }, 600);
+  }, 500);
 }
 
 /* =========================
-   PLAYER LOOP
+   LOOP PRINCIPAL
 ========================= */
 function tocar() {
   if (!playlist.length) return;
@@ -126,9 +145,8 @@ function tocar() {
 }
 
 /* =========================
-   RODAPÉ (HORA + CLIMA)
+   RODAPÉ
 ========================= */
-
 function atualizarHora() {
   const agora = new Date();
   document.getElementById("dataHora").innerText =
@@ -141,18 +159,15 @@ async function atualizarClima() {
   try {
     const res = await fetch(`/api/clima/${tvId}`);
     const c = await res.json();
-
     document.getElementById("clima").innerText =
       `${c.cidade} • ${c.temperatura}°C • ${c.descricao}`;
-  } catch (e) {
+  } catch {
     document.getElementById("clima").innerText = "";
   }
 }
 
-/* timers separados (importante) */
-setInterval(atualizarHora, 1000);       // relógio fluido
-setInterval(atualizarClima, 60000);     // clima 1x por minuto
-
+setInterval(atualizarHora, 1000);
+setInterval(atualizarClima, 60000);
 
 /* =========================
    START
@@ -163,4 +178,3 @@ setInterval(atualizarClima, 60000);     // clima 1x por minuto
   atualizarClima();
   tocar();
 })();
-

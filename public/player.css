@@ -12,7 +12,7 @@ html, body {
   overflow: hidden;
 }
 
-/* CONTEÚDO */
+/* ÁREA PRINCIPAL */
 #conteudo {
   width: 100vw;
   height: calc(100vh - 42px);
@@ -20,13 +20,10 @@ html, body {
   align-items: center;
   justify-content: center;
   opacity: 1;
+  transition: opacity 0.5s ease-in-out;
 }
 
-.fade {
-  transition: opacity 0.6s ease-in-out;
-}
-
-/* IMAGENS E VÍDEOS */
+/* MÍDIAS */
 .midia-img,
 .midia-video {
   width: 100%;
@@ -34,18 +31,20 @@ html, body {
   object-fit: cover;
 }
 
+/* fallback */
 .fallback {
   object-fit: contain;
-  background: #000;
+  background: black;
 }
 
 /* NOTÍCIAS */
 .noticia-box {
   width: 85%;
   max-width: 1100px;
-  background: #fff;
+  background: white;
   padding: 40px;
   border-radius: 18px;
+  text-align: center;
 }
 
 .noticia-tag {
