@@ -4,7 +4,7 @@ const ARQUIVOS_BASE = [
   "/player.html",
   "/player.css",
   "/player.js",
-  "/fallback.jpg"
+  "img/fallback.jpg"
 ];
 
 /* =========================
