@@ -8,95 +8,61 @@ html, body {
   width: 100%;
   height: 100%;
   background: black;
-  overflow: hidden;
   font-family: Arial, Helvetica, sans-serif;
+  overflow: hidden;
 }
 
-#container {
+#conteudo {
   width: 100vw;
-  height: 100vh;
-  position: relative;
+  height: calc(100vh - 40px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* ==========================
-   MÍDIAS
-========================== */
-
-.midia {
+.midia-img, .midia-video {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  background: black;
 }
-
-/* ==========================
-   NEWS BOX
-========================== */
 
 .noticia-box {
+  width: 90%;
+  max-width: 1200px;
   background: white;
-  color: black;
-  padding: 60px;
-  max-width: 80%;
+  padding: 40px;
   border-radius: 16px;
-  text-align: center;
-  animation: fade 0.6s ease;
 }
 
-.noticia-header {
-  background: #dc2626;
+.noticia-tag {
+  background: red;
   color: white;
-  font-weight: bold;
-  padding: 10px 20px;
+  padding: 6px 16px;
   border-radius: 8px;
-  margin-bottom: 30px;
   display: inline-block;
+  margin-bottom: 20px;
+  font-weight: bold;
 }
 
 .noticia-titulo {
-  font-size: 42px;
-  font-weight: bold;
+  font-size: 36px;
   margin-bottom: 20px;
+  color: #111;
 }
 
-.noticia-resumo {
-  font-size: 26px;
-  line-height: 1.4;
+.noticia-texto {
+  font-size: 22px;
+  line-height: 1.5;
+  color: #333;
 }
 
-/* ==========================
-   RESPONSIVO
-========================== */
-
-@media (max-width: 900px) {
-  .news-content {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .news-image img {
-    width: 100%;
-    height: 220px;
-  }
-
-  .news-text h1 {
-    font-size: 32px;
-  }
-
-  .news-text p {
-    font-size: 22px;
-  }
-}
-
-/* ==========================
-   FADE
-========================== */
-
-.fade-in {
-  animation: fadeIn 0.8s ease;
-}
-
-@keyframes fade {
-  from { opacity: 0 }
-  to { opacity: 1 }
+#rodape {
+  height: 40px;
+  background: rgba(0,0,0,0.8);
+  color: white;
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 20px;
+  align-items: center;
 }

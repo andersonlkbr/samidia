@@ -1,158 +1,99 @@
+const params = new URLSearchParams(window.location.search);
+const tvId = params.get("tv");
+
+const conteudo = document.getElementById("conteudo");
+
 let playlist = [];
 let noticias = [];
 let indice = 0;
-let contadorMidias = 0;
+let contadorAnuncios = 0;
 
-let conteudo = null;
-
-const tvId = new URLSearchParams(window.location.search).get('tv');
-
-/* ==========================
-   INIT
-========================== */
-document.addEventListener('DOMContentLoaded', async () => {
-  conteudo = document.getElementById('conteudo');
-
-  if (!conteudo) {
-    console.error('❌ Elemento #conteudo não encontrado no HTML');
-    return;
-  }
-
-  await carregarDados();
-  tocar();
-});
-
-/* ==========================
-   FETCH
-========================== */
 async function carregarDados() {
-  try {
-    const resPlaylist = await fetch(`/api/playlist/${tvId}`);
-    playlist = await resPlaylist.json();
-  } catch (e) {
-    console.error('Erro playlist', e);
-    playlist = [];
+  const p = await fetch(`/api/playlist/${tvId}`).then(r => r.json());
+  const n = await fetch(`/api/noticias/${tvId}`).then(r => r.json());
+
+  playlist = p;
+  noticias = n;
+}
+
+function limpar() {
+  conteudo.innerHTML = "";
+}
+
+function renderMidia(item) {
+  limpar();
+
+  if (item.tipo === "imagem") {
+    const img = document.createElement("img");
+    img.src = item.url;
+    img.className = "midia-img";
+    conteudo.appendChild(img);
+
+    setTimeout(tocar, item.duracao * 1000);
   }
 
-  try {
-    const resNoticias = await fetch(`/api/noticias/${tvId}`);
-    noticias = await resNoticias.json();
-  } catch (e) {
-    console.error('Erro notícias', e);
-    noticias = [];
+  if (item.tipo === "video") {
+    const video = document.createElement("video");
+    video.src = item.url;
+    video.autoplay = true;
+    video.muted = true;
+    video.className = "midia-video";
+
+    video.onended = tocar;
+    conteudo.appendChild(video);
   }
 }
 
-/* ==========================
-   PLAYER LOOP
-========================== */
-function tocar() {
-  if (!playlist.length) {
-    mostrarTelaVazia();
-    setTimeout(tocar, 5000);
-    return;
-  }
+function renderNoticia(n) {
+  limpar();
 
-  // A cada 2 mídias → notícia
-  if (contadorMidias > 0 && contadorMidias % 2 === 0 && noticias.length) {
-    mostrarNoticia();
-    contadorMidias++;
-    return;
-  }
-
-  const midia = playlist[indice];
-  indice = (indice + 1) % playlist.length;
-  contadorMidias++;
-
-  renderMidia(midia);
-}
-
-/* ==========================
-   RENDER
-========================== */
-function limparConteudo() {
-  conteudo.classList.remove('fade-in');
-  conteudo.innerHTML = '';
-}
-
-function renderMidia(midia) {
-  limparConteudo();
-
-  let el;
-
-  if (midia.tipo === 'imagem') {
-    el = document.createElement('img');
-    el.src = midia.url;
-    el.style.width = '100%';
-    el.style.height = '100%';
-    el.style.objectFit = 'contain';
-
-    conteudo.appendChild(el);
-    fadeIn();
-
-    setTimeout(tocar, (midia.duracao || 10) * 1000);
-  }
-
-  if (midia.tipo === 'video') {
-    el = document.createElement('video');
-    el.src = midia.url;
-    el.autoplay = true;
-    el.muted = true;
-    el.playsInline = true;
-    el.style.width = '100%';
-    el.style.height = '100%';
-    el.style.objectFit = 'contain';
-
-    el.onended = tocar;
-
-    conteudo.appendChild(el);
-    fadeIn();
-  }
-}
-
-/* ==========================
-   NOTÍCIAS
-========================== */
-function mostrarNoticia() {
-  if (!noticias.length) {
-    tocar();
-    return;
-  }
-
-  const noticia = noticias.shift();
-  noticias.push(noticia);
-
-  limparConteudo();
-
-  const box = document.createElement('div');
-  box.className = 'noticia-box';
+  const box = document.createElement("div");
+  box.className = "noticia-box";
 
   box.innerHTML = `
-    <div class="noticia-header">NOTÍCIAS</div>
-    <div class="noticia-titulo">${noticia.titulo}</div>
-    <div class="noticia-resumo">${noticia.resumo}</div>
+    <div class="noticia-tag">NOTÍCIAS</div>
+    <div class="noticia-titulo">${n.titulo}</div>
+    <div class="noticia-texto">${n.resumo}</div>
   `;
 
   conteudo.appendChild(box);
-  fadeIn();
 
-  setTimeout(tocar, (noticia.duracao || 10) * 1000);
+  setTimeout(tocar, 10000);
 }
 
-/* ==========================
-   UI
-========================== */
-function fadeIn() {
-  requestAnimationFrame(() => {
-    conteudo.classList.add('fade-in');
-  });
+function tocar() {
+  if (!playlist.length) return;
+
+  if (contadorAnuncios === 2 && noticias.length) {
+    contadorAnuncios = 0;
+    const n = noticias[Math.floor(Math.random() * noticias.length)];
+    return renderNoticia(n);
+  }
+
+  const item = playlist[indice];
+  indice = (indice + 1) % playlist.length;
+  contadorAnuncios++;
+
+  renderMidia(item);
 }
 
-function mostrarTelaVazia() {
-  limparConteudo();
-  conteudo.innerHTML = `
-    <div style="color:white;font-size:28px;text-align:center">
-      Nenhuma mídia disponível
-    </div>
-  `;
+function atualizarRodape() {
+  const agora = new Date();
+  document.getElementById("dataHora").innerText =
+    agora.toLocaleDateString() + " - " + agora.toLocaleTimeString();
+
+  fetch(`/api/clima/${tvId}`)
+    .then(r => r.json())
+    .then(c => {
+      document.getElementById("clima").innerText =
+        `${c.cidade} • ${c.temp}°C • ${c.descricao}`;
+    });
 }
+
+setInterval(atualizarRodape, 60000);
+
+(async () => {
+  await carregarDados();
+  atualizarRodape();
+  tocar();
+})();
