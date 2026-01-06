@@ -115,31 +115,24 @@ function renderNoticia(noticia) {
   setTimeout(() => {
     limpar();
 
-    const box = document.createElement("div");
-    box.className = "noticia-box";
+    const wrapper = document.createElement("div");
+    wrapper.className = "noticia-full";
 
-    // Imagem (se existir)
-    let imagemHtml = "";
-    if (noticia.imagem) {
-      imagemHtml = `
-        <div class="noticia-imagem">
-          <img src="${noticia.imagem}" onerror="this.style.display='none'" />
-        </div>
-      `;
-    }
+    const img = document.createElement("img");
+    img.className = "noticia-imagem";
+    img.src = noticia.imagem || "img/fallback.jpg";
+    img.onerror = () => {
+      img.src = "img/fallback.jpg";
+    };
 
-    box.innerHTML = `
-      ${imagemHtml}
-      <div class="noticia-conteudo">
-        <div class="noticia-tag">NOTÍCIAS</div>
-        <div class="noticia-titulo">${noticia.titulo}</div>
-        <div class="noticia-resumo">
-          ${resumoCurto(noticia.resumo, 300)}
-        </div>
-      </div>
-    `;
+    const faixa = document.createElement("div");
+    faixa.className = "noticia-faixa";
+    faixa.innerHTML = `<h1>${noticia.titulo}</h1>`;
 
-    conteudo.appendChild(box);
+    wrapper.appendChild(img);
+    wrapper.appendChild(faixa);
+
+    conteudo.appendChild(wrapper);
     fadeIn();
 
     setTimeout(tocar, 10000);
@@ -148,33 +141,35 @@ function renderNoticia(noticia) {
 
 
 
+
 /* =========================
    RENDER CLIMA FULLSCREEN
 ========================= */
 function renderClima() {
+  if (!climaAtual) {
+    return tocar();
+  }
+
   fadeOut();
 
   setTimeout(() => {
     limpar();
 
-    const climaBox = document.createElement("div");
-    climaBox.className = "clima-box";
-    climaBox.innerHTML = `
-      <div class="clima-cidade" id="climaCidade">--</div>
-      <div class="clima-temp" id="climaTemp">--°C</div>
-      <div class="clima-desc" id="climaDesc">Carregando...</div>
+    const clima = document.createElement("div");
+    clima.className = "clima-full";
+    clima.innerHTML = `
+      <div class="clima-cidade">${climaAtual.cidade}</div>
+      <div class="clima-temp">${climaAtual.temperatura}°C</div>
+      <div class="clima-desc">${climaAtual.descricao}</div>
     `;
 
-    conteudo.appendChild(climaBox);
+    conteudo.appendChild(clima);
     fadeIn();
 
-    // Atualiza clima imediatamente
-    atualizarClimaTela();
-
-    // Tempo do clima na tela (ex: 8s)
     setTimeout(tocar, 8000);
   }, 500);
 }
+
 
 async function atualizarClimaTela() {
   try {
