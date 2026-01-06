@@ -1,9 +1,11 @@
+/* RESET */
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
+/* BASE */
 html, body {
   width: 100%;
   height: 100%;
@@ -12,7 +14,9 @@ html, body {
   overflow: hidden;
 }
 
-/* ÁREA PRINCIPAL */
+/* =========================
+   ÁREA PRINCIPAL
+========================= */
 #conteudo {
   width: 100vw;
   height: calc(100vh - 42px);
@@ -23,7 +27,9 @@ html, body {
   transition: opacity 0.5s ease-in-out;
 }
 
-/* MÍDIAS */
+/* =========================
+   MÍDIAS (IMAGEM / VÍDEO)
+========================= */
 .midia-img,
 .midia-video {
   width: 100%;
@@ -31,47 +37,15 @@ html, body {
   object-fit: cover;
 }
 
+/* Fallback de imagem */
 .fallback {
   object-fit: contain;
   background: black;
 }
 
 /* =========================
-   NOTÍCIA FULLSCREEN
+   NOTÍCIAS (COM IMAGEM)
 ========================= */
-.noticia-full {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  background: #fff;
-}
-
-.noticia-imagem {
-  flex: 1.1;
-  background-size: cover;
-  background-position: center;
-}
-
-.noticia-titulo-faixa {
-  background: #b91c1c;
-  color: #fff;
-  padding: 28px 40px;
-  font-size: 36px;
-  font-weight: bold;
-  line-height: 1.3;
-}
-
-.noticia-fonte {
-  flex: 0.4;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.noticia-fonte img {
-  max-height: 80px;
-}
 .noticia-box {
   width: 90%;
   max-width: 1200px;
@@ -82,54 +56,47 @@ html, body {
   flex-direction: column;
 }
 
+/* Imagem da notícia */
 .noticia-imagem img {
   width: 100%;
   height: 380px;
   object-fit: cover;
 }
 
+/* Conteúdo */
 .noticia-conteudo {
   padding: 36px;
   text-align: center;
 }
 
+/* Tag */
+.noticia-tag {
+  background: #dc2626;
+  color: white;
+  padding: 6px 18px;
+  border-radius: 999px;
+  font-weight: bold;
+  display: inline-block;
+  margin-bottom: 18px;
+}
+
+/* Título */
+.noticia-titulo {
+  font-size: 34px;
+  color: #111;
+  margin-bottom: 18px;
+}
+
+/* Resumo */
+.noticia-resumo {
+  font-size: 22px;
+  color: #333;
+  line-height: 1.5;
+}
 
 /* =========================
-   CLIMA FULLSCREEN
+   CLIMA (TELA CHEIA)
 ========================= */
-.clima-full {
-  width: 100%;
-  height: 100%;
-  background: linear-gradient(180deg, #0f172a, #020617);
-  color: white;
-  display: flex;
-  flex-direction: column;
-}
-
-.clima-topo {
-  padding: 40px;
-  font-size: 42px;
-  font-weight: bold;
-  text-align: center;
-}
-
-.clima-centro {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.clima-temp {
-  font-size: 120px;
-  font-weight: bold;
-}
-
-.clima-desc {
-  font-size: 36px;
-  opacity: 0.85;
-}
 .clima-box {
   width: 100%;
   height: 100%;
@@ -141,40 +108,44 @@ html, body {
   justify-content: center;
 }
 
+/* Cidade */
 .clima-cidade {
   font-size: 42px;
   margin-bottom: 20px;
 }
 
+/* Bloco principal */
 .clima-principal {
   display: flex;
   align-items: center;
   gap: 40px;
 }
 
+/* Temperatura */
 .clima-temp {
   font-size: 96px;
   font-weight: bold;
 }
 
+/* Ícone */
 .clima-icone {
   width: 140px;
   height: 140px;
 }
 
+/* Descrição */
 .clima-desc {
   margin-top: 20px;
   font-size: 26px;
   opacity: 0.9;
 }
 
-
 /* =========================
-   RODAPÉ
+   RODAPÉ (DATA / HORA / CLIMA)
 ========================= */
 #rodape {
   height: 42px;
-  background: rgba(0,0,0,0.85);
+  background: rgba(0, 0, 0, 0.85);
   color: white;
   display: flex;
   justify-content: space-between;
@@ -183,101 +154,28 @@ html, body {
   font-size: 14px;
 }
 
+/* =========================
+   RESPONSIVO (TV VERTICAL)
+========================= */
+@media (orientation: portrait) {
+  .noticia-imagem img {
+    height: 280px;
+  }
 
-/* =====================
-   ORIENTAÇÃO AUTOMÁTICA (LEGACY COMPATIBLE)
-===================== */
+  .noticia-titulo {
+    font-size: 28px;
+  }
 
-/* MODO HORIZONTAL (TV DEITADA) */
-body.horizontal .midia-img,
-body.horizontal .midia-video {
-    width: 100%;
-    height: 100%;
-    -webkit-object-fit: cover; /* Prefixo para Android antigo */
-    object-fit: cover;
-    display: block;
-}
+  .noticia-resumo {
+    font-size: 20px;
+  }
 
-/* MODO VERTICAL (TOTEM/TV EM PÉ) */
-body.vertical .midia-img,
-body.vertical .midia-video {
-    width: 100%;
-    height: 100%;
-    -webkit-object-fit: contain; /* Prefixo para Android antigo */
-    object-fit: contain;
-    background-color: #000000;
-    display: block;
-}
+  .clima-temp {
+    font-size: 80px;
+  }
 
-/* Ajuste para garantir que o container ocupe a tela toda no modo vertical */
-body.vertical #conteudo {
-    background: #000;
-    width: 100vw;
-    height: calc(100vh - 42px);
-}
-
-body.vertical .noticia-box {
-  width: 92%;
-  padding: 30px;
-}
-
-body.vertical .noticia-titulo {
-  font-size: 28px;
-}
-
-body.vertical .noticia-resumo {
-  font-size: 20px;
-}
-
-body.horizontal .noticia-box {
-  width: 85%;
-}
-
-body.vertical .noticia-box {
-  width: 92%;
-  padding: 30px;
-}
-
-body.vertical .noticia-titulo {
-  font-size: 28px;
-}
-
-body.vertical .noticia-resumo {
-  font-size: 20px;
-}
-
-body.horizontal .noticia-box {
-  width: 85%;
-}
-body.vertical .clima-box {
-  padding: 40px;
-}
-
-body.vertical .clima-temp {
-  font-size: 72px;
-}
-
-body.horizontal .clima-temp {
-  font-size: 90px;
-}
-
-/* ÁREA LOGO */
-.noticia-fonte {
-  flex: 0.4;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.noticia-fonte img {
-  max-height: 80px;
-}
-
-body.vertical .noticia-titulo-faixa {
-  font-size: 30px;
-  padding: 24px;
-}
-
-body.vertical .noticia-fonte img {
-  max-height: 70px;
+  .clima-icone {
+    width: 110px;
+    height: 110px;
+  }
 }
