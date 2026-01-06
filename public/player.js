@@ -1,6 +1,28 @@
 /* =========================
    PLAYER COMPATÍVEL COM TV BOX ANTIGA (ES5)
    ========================= */
+
+   /* =========================
+   DETECÇÃO DE ORIENTAÇÃO (COMPATÍVEL)
+   ========================= */
+function detectarOrientacao() {
+    var vertical = window.innerHeight > window.innerWidth;
+    
+    if (vertical) {
+        document.body.className = "vertical";
+    } else {
+        document.body.className = "horizontal";
+    }
+}
+
+// Detectar ao iniciar
+detectarOrientacao();
+
+// Detectar se mudar (Usando function tradicional para compatibilidade)
+window.addEventListener("resize", function() {
+    detectarOrientacao();
+});
+
 var params = new URLSearchParams(window.location.search);
 var tvId = params.get("tv") || "1"; // Fallback se não vier id
 
@@ -84,19 +106,33 @@ function renderMidia(item) {
 }
 
 function renderNoticia(noticia) {
-    fadeOut();
-    setTimeout(function() {
-        limpar();
-        var box = document.createElement("div");
-        box.className = "noticia-box";
-        box.innerHTML = '<div class="noticia-tag">NOTÍCIAS</div>' +
-                        '<div class="noticia-titulo">' + noticia.titulo + '</div>' +
-                        '<div class="noticia-resumo">' + resumoCurto(noticia.resumo) + '</div>';
-        conteudo.appendChild(box);
-        fadeIn();
-        setTimeout(tocar, 10000);
-    }, 500);
+  fadeOut();
+
+  setTimeout(() => {
+    limpar();
+
+    const box = document.createElement("div");
+    box.className = "noticia-full";
+
+    box.innerHTML = `
+      <div class="noticia-imagem" style="background-image:url('${noticia.imagem || "/fallback.jpg"}')"></div>
+
+      <div class="noticia-titulo-faixa">
+        ${noticia.titulo}
+      </div>
+
+      <div class="noticia-fonte">
+        <img src="img/logo-g1.png" alt="g1" />
+      </div>
+    `;
+
+    conteudo.appendChild(box);
+    fadeIn();
+
+    setTimeout(tocar, 12000);
+  }, 500);
 }
+
 
 function tocar() {
     if (!playlist || !playlist.length) return;

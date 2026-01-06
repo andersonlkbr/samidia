@@ -103,3 +103,130 @@ html, body {
     padding: 0 20px;
     font-size: 14px;
 }
+
+/* =====================
+   ORIENTAÇÃO AUTOMÁTICA (LEGACY COMPATIBLE)
+===================== */
+
+/* MODO HORIZONTAL (TV DEITADA) */
+body.horizontal .midia-img,
+body.horizontal .midia-video {
+    width: 100%;
+    height: 100%;
+    -webkit-object-fit: cover; /* Prefixo para Android antigo */
+    object-fit: cover;
+    display: block;
+}
+
+/* MODO VERTICAL (TOTEM/TV EM PÉ) */
+body.vertical .midia-img,
+body.vertical .midia-video {
+    width: 100%;
+    height: 100%;
+    -webkit-object-fit: contain; /* Prefixo para Android antigo */
+    object-fit: contain;
+    background-color: #000000;
+    display: block;
+}
+
+/* Ajuste para garantir que o container ocupe a tela toda no modo vertical */
+body.vertical #conteudo {
+    background: #000;
+    width: 100vw;
+    height: calc(100vh - 42px);
+}
+
+body.vertical .noticia-box {
+  width: 92%;
+  padding: 30px;
+}
+
+body.vertical .noticia-titulo {
+  font-size: 28px;
+}
+
+body.vertical .noticia-resumo {
+  font-size: 20px;
+}
+
+body.horizontal .noticia-box {
+  width: 85%;
+}
+
+body.vertical .noticia-box {
+  width: 92%;
+  padding: 30px;
+}
+
+body.vertical .noticia-titulo {
+  font-size: 28px;
+}
+
+body.vertical .noticia-resumo {
+  font-size: 20px;
+}
+
+body.horizontal .noticia-box {
+  width: 85%;
+}
+body.vertical .clima-box {
+  padding: 40px;
+}
+
+body.vertical .clima-temp {
+  font-size: 72px;
+}
+
+body.horizontal .clima-temp {
+  font-size: 90px;
+}
+
+/* =========================
+   NOTÍCIA ESTILO PORTAL
+========================= */
+
+.noticia-full {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+/* IMAGEM TOPO */
+.noticia-imagem {
+  flex: 1.1;
+  background-size: cover;
+  background-position: center;
+}
+
+/* FAIXA VERMELHA */
+.noticia-titulo-faixa {
+  background: #b91c1c;
+  color: #fff;
+  padding: 28px 40px;
+  font-size: 36px;
+  font-weight: bold;
+  line-height: 1.3;
+}
+
+/* ÁREA LOGO */
+.noticia-fonte {
+  flex: 0.4;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.noticia-fonte img {
+  max-height: 80px;
+}
+
+body.vertical .noticia-titulo-faixa {
+  font-size: 30px;
+  padding: 24px;
+}
+
+body.vertical .noticia-fonte img {
+  max-height: 70px;
+}
