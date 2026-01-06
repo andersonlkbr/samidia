@@ -115,7 +115,7 @@ function renderNoticia(noticia) {
     box.className = "noticia-full";
 
     box.innerHTML = `
-      <div class="noticia-imagem" style="background-image:url('${noticia.imagem || "/fallback.jpg"}')"></div>
+      <div class="noticia-imagem" style="background-image:url('${noticia.imagem || "img/fallback.jpg"}')"></div>
 
       <div class="noticia-titulo-faixa">
         ${noticia.titulo}
