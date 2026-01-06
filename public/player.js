@@ -122,7 +122,7 @@ function renderNoticia(noticia) {
       <div class="noticia-imagem" style="background-image:url('${noticia.imagem || "/fallback.jpg"}')"></div>
       <div class="noticia-titulo-faixa">${noticia.titulo}</div>
       <div class="noticia-fonte">
-        <img src="/logos/g1.png" alt="g1" />
+        <img src="img/logo-g1.png" alt="g1" />
       </div>
     `;
 
@@ -171,25 +171,25 @@ function renderClima() {
 function tocar() {
   if (!playlist.length) return;
 
-  // A cada 2 anúncios → notícia
-  if (anunciosRodados === 2 && noticias.length) {
-    anunciosRodados = 0;
+  anunciosRodados++;
+
+  // A cada 5 itens → clima
+  if (anunciosRodados % 5 === 0 && climaAtual) {
+    return renderClima();
+  }
+
+  // A cada 3 itens → notícia
+  if (anunciosRodados % 3 === 0 && noticias.length) {
     const noticia = noticias[Math.floor(Math.random() * noticias.length)];
     return renderNoticia(noticia);
   }
 
-  // A cada 5 anúncios → clima
-  if (anunciosRodados === 5 && climaAtual) {
-    anunciosRodados = 0;
-    return renderClima();
-  }
-
   const item = playlist[indice];
   indice = (indice + 1) % playlist.length;
-  anunciosRodados++;
 
   renderMidia(item);
 }
+
 
 /* =========================
    RODAPÉ
