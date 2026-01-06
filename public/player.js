@@ -116,46 +116,54 @@ function renderNoticia(noticia) {
     limpar();
 
     const box = document.createElement("div");
-    box.className = "noticia-full";
+    box.className = "noticia-box";
+
+    const imagem = noticia.imagem
+      ? `<div class="noticia-imagem">
+           <img src="${noticia.imagem}" onerror="this.style.display='none'">
+         </div>`
+      : "";
 
     box.innerHTML = `
-      <div class="noticia-imagem" style="background-image:url('${noticia.imagem || "/fallback.jpg"}')"></div>
-      <div class="noticia-titulo-faixa">${noticia.titulo}</div>
-      <div class="noticia-fonte">
-        <img src="img/logo-g1.png" alt="g1" />
+      ${imagem}
+      <div class="noticia-conteudo">
+        <div class="noticia-tag">NOTÍCIAS</div>
+        <div class="noticia-titulo">${noticia.titulo}</div>
+        <div class="noticia-resumo">
+          ${resumoCurto(noticia.resumo, 220)}
+        </div>
       </div>
     `;
 
     conteudo.appendChild(box);
     fadeIn();
 
-    setTimeout(tocar, 12000);
+    setTimeout(tocar, 10000);
   }, 500);
 }
+
 
 /* =========================
    RENDER CLIMA FULLSCREEN
 ========================= */
 function renderClima() {
-  if (!climaAtual) return tocar();
-
   fadeOut();
 
   setTimeout(() => {
     limpar();
 
     const box = document.createElement("div");
-    box.className = "clima-full";
+    box.className = "clima-box";
 
     box.innerHTML = `
-      <div class="clima-topo">
-        <div class="clima-cidade">${climaAtual.cidade}</div>
+      <div class="clima-cidade">${climaAtual.cidade}</div>
+
+      <div class="clima-principal">
+        <div class="clima-temp">${climaAtual.temperatura}°C</div>
+        <img class="clima-icone" src="${climaAtual.icone}" />
       </div>
 
-      <div class="clima-centro">
-        <div class="clima-temp">${climaAtual.temperatura}°C</div>
-        <div class="clima-desc">${climaAtual.descricao}</div>
-      </div>
+      <div class="clima-desc">${climaAtual.descricao}</div>
     `;
 
     conteudo.appendChild(box);
@@ -164,6 +172,7 @@ function renderClima() {
     setTimeout(tocar, 8000);
   }, 500);
 }
+
 
 /* =========================
    LOOP PRINCIPAL

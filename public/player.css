@@ -72,6 +72,27 @@ html, body {
 .noticia-fonte img {
   max-height: 80px;
 }
+.noticia-box {
+  width: 90%;
+  max-width: 1200px;
+  background: white;
+  border-radius: 18px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.noticia-imagem img {
+  width: 100%;
+  height: 380px;
+  object-fit: cover;
+}
+
+.noticia-conteudo {
+  padding: 36px;
+  text-align: center;
+}
+
 
 /* =========================
    CLIMA FULLSCREEN
@@ -109,6 +130,44 @@ html, body {
   font-size: 36px;
   opacity: 0.85;
 }
+.clima-box {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, #0a2a4a, #0f4c75);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.clima-cidade {
+  font-size: 42px;
+  margin-bottom: 20px;
+}
+
+.clima-principal {
+  display: flex;
+  align-items: center;
+  gap: 40px;
+}
+
+.clima-temp {
+  font-size: 96px;
+  font-weight: bold;
+}
+
+.clima-icone {
+  width: 140px;
+  height: 140px;
+}
+
+.clima-desc {
+  margin-top: 20px;
+  font-size: 26px;
+  opacity: 0.9;
+}
+
 
 /* =========================
    RODAPÉ
