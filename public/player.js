@@ -157,7 +157,7 @@ function renderClima() {
     const icon = iconeClima(climaAtual?.descricao);
 
     box.innerHTML = `
-      <img class="clima-icon" src="/icons/clima/${icon}" />
+      <img class="clima-icon" src="/img/icones/${icon}" />
       <div class="clima-temp">${climaAtual?.temperatura ?? "--"}°C</div>
       <div class="clima-desc">${climaAtual?.descricao ?? ""}</div>
 
