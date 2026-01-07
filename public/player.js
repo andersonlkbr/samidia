@@ -107,7 +107,7 @@ async function renderMidia(item) {
 }
 
 /* =========================
-   RENDER NOTÍCIA (PORTAL)
+   RENDER NOTÍCIA
 ========================= */
 function renderNoticia(noticia) {
   fadeOut();
@@ -115,94 +115,61 @@ function renderNoticia(noticia) {
   setTimeout(() => {
     limpar();
 
-    const wrapper = document.createElement("div");
-    wrapper.className = "noticia-full";
-
-    const img = document.createElement("img");
-    img.className = "noticia-imagem";
-    img.src = noticia.imagem || "/img/fallback.jpg";
-    img.onerror = () => {
-      img.src = "/img/fallback.jpg";
-    };
-
-    const faixa = document.createElement("div");
-    faixa.className = "noticia-faixa";
-    faixa.innerHTML = `<h1>${noticia.titulo}</h1>`;
-
-    wrapper.appendChild(img);
-    wrapper.appendChild(faixa);
-
-    conteudo.appendChild(wrapper);
-    fadeIn();
-
-    setTimeout(tocar, 10000);
-  }, 500);
-}
-
-
-
-
-/* =========================
-   RENDER CLIMA FULLSCREEN
-========================= */
-function renderClima() {
-  fadeOut();
-
-  setTimeout(() => {
-    limpar();
-
     const box = document.createElement("div");
-    box.className = "clima-full";
-
-    const icon = iconeClima(climaAtual?.descricao);
+    box.className = "noticia-full";
 
     box.innerHTML = `
-      <img class="clima-icon" src="/img/icones/${icon}" />
-      <div class="clima-temp">${climaAtual?.temperatura ?? "--"}°C</div>
-      <div class="clima-desc">${climaAtual?.descricao ?? ""}</div>
+      <img class="noticia-imagem" src="${noticia.imagem || 'img/fallback.jpg'}"
+        onerror="this.src='img/fallback.jpg'" />
 
-      <div class="clima-previsao">
-        <div class="clima-dia">Hoje<span>${climaAtual?.temperatura ?? "--"}°</span></div>
-        <div class="clima-dia">Amanhã<span>${climaAtual?.temperatura + 1 ?? "--"}°</span></div>
-        <div class="clima-dia">Depois<span>${climaAtual?.temperatura - 1 ?? "--"}°</span></div>
+      <div class="noticia-faixa">
+        <h1>${noticia.titulo}</h1>
       </div>
     `;
 
     conteudo.appendChild(box);
     fadeIn();
 
-    setTimeout(tocar, 8000);
+    setTimeout(tocar, 10000);
   }, 500);
 }
 
+/* =========================
+   RENDER CLIMA (APP STYLE)
+========================= */
+function renderClima() {
+  if (!climaAtual) return tocar();
 
-async function atualizarClimaTela() {
-  try {
-    const res = await fetch(`/api/clima/${tvId}`);
-    const c = await res.json();
+  fadeOut();
 
-    document.querySelector(".clima-cidade").innerText = c.cidade;
-    document.querySelector(".clima-temp").innerText = `${c.temperatura}°C`;
-    document.querySelector(".clima-desc").innerText = c.descricao;
-    document.querySelector(".clima-extra").innerText =
-      `Atualizado agora • ${new Date().toLocaleTimeString("pt-BR")}`;
-  } catch {
-    document.querySelector(".clima-desc").innerText = "";
-  }
+  setTimeout(() => {
+    limpar();
+
+    const clima = document.createElement("div");
+    clima.className = "clima-full";
+
+    clima.innerHTML = `
+      <div class="clima-cidade">${climaAtual.cidade}</div>
+      <div class="clima-temp">${climaAtual.temperatura}°</div>
+      <div class="clima-desc">${climaAtual.descricao}</div>
+
+      <div class="clima-prev">
+        ${climaAtual.previsao.map(p => `
+          <div class="clima-dia">
+            <span>${p.dia}</span>
+            <strong>${p.max}°</strong>
+            <small>${p.min}°</small>
+          </div>
+        `).join("")}
+      </div>
+    `;
+
+    conteudo.appendChild(clima);
+    fadeIn();
+
+    setTimeout(tocar, 9000);
+  }, 500);
 }
-
-function iconeClima(descricao = "") {
-  const d = descricao.toLowerCase();
-
-  if (d.includes("sol")) return "sol.png";
-  if (d.includes("chuva")) return "chuva.png";
-  if (d.includes("tempest")) return "tempestade.png";
-  if (d.includes("nublado") || d.includes("nuvem")) return "nublado.png";
-  if (d.includes("nebl")) return "neblina.png";
-
-  return "nublado.png";
-}
-
 
 /* =========================
    LOOP PRINCIPAL
@@ -213,8 +180,9 @@ function tocar() {
   // A cada 2 anúncios → notícia
   if (anunciosRodados === 2 && noticias.length) {
     anunciosRodados++;
-    const noticia = noticias[Math.floor(Math.random() * noticias.length)];
-    return renderNoticia(noticia);
+    return renderNoticia(
+      noticias[Math.floor(Math.random() * noticias.length)]
+    );
   }
 
   // A cada 4 anúncios → clima
@@ -230,8 +198,6 @@ function tocar() {
   renderMidia(item);
 }
 
-
-
 /* =========================
    RODAPÉ
 ========================= */
@@ -245,9 +211,7 @@ function atualizarHora() {
 
 async function atualizarClimaRodape() {
   try {
-    const res = await fetch(`/api/clima/${tvId}`);
-    climaAtual = await res.json();
-
+    climaAtual = await fetch(`/api/clima/${tvId}`).then(r => r.json());
     document.getElementById("clima").innerText =
       `${climaAtual.cidade} • ${climaAtual.temperatura}°C • ${climaAtual.descricao}`;
   } catch {
