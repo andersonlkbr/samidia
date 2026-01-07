@@ -120,9 +120,9 @@ function renderNoticia(noticia) {
 
     const img = document.createElement("img");
     img.className = "noticia-imagem";
-    img.src = noticia.imagem || "img/fallback.jpg";
+    img.src = noticia.imagem || "/img/fallback.jpg";
     img.onerror = () => {
-      img.src = "img/fallback.jpg";
+      img.src = "/img/fallback.jpg";
     };
 
     const faixa = document.createElement("div");
