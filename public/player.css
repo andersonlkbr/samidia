@@ -40,34 +40,47 @@ html, body {
 }
 
 /* =========================
-   NOTÍCIA – TELA CHEIA (CORRIGIDA)
+   NOTÍCIA – TELA CHEIA (DEFINITIVO)
 ========================= */
 .noticia-full {
   position: absolute;
   inset: 0;
-  display: flex;
-  flex-direction: column;
   background: black;
+  overflow: hidden;
 }
 
-/* IMAGEM */
+/* IMAGEM DA NOTÍCIA */
 .noticia-imagem {
-  flex: 1 1 auto;
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: auto;
-  max-height: calc(100vh - 160px); /* garante espaço para a faixa */
+  height: 100%;
   object-fit: cover;
 }
 
-/* FAIXA VERMELHA */
+/* OVERLAY GRADIENTE (AJUDA LEGIBILIDADE) */
+.noticia-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.75) 0%,
+    rgba(0,0,0,0.45) 35%,
+    rgba(0,0,0,0.1) 60%,
+    rgba(0,0,0,0) 100%
+  );
+}
+
+/* FAIXA VERMELHA (NUNCA SOME) */
 .noticia-faixa {
-  flex-shrink: 0;              /* <<< ISSO É O MAIS IMPORTANTE */
-  min-height: 140px;           /* nunca some */
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
   background: #b91c1c;
   color: white;
   padding: 28px 40px;
-  display: flex;
-  align-items: center;
+  z-index: 2;
 }
 
 /* TÍTULO */
@@ -75,7 +88,9 @@ html, body {
   font-size: clamp(28px, 4vw, 52px);
   font-weight: bold;
   line-height: 1.2;
+  margin: 0;
 }
+
 
 
 /* =========================

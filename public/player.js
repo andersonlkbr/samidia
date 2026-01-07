@@ -119,13 +119,15 @@ function renderNoticia(noticia) {
     box.className = "noticia-full";
 
     box.innerHTML = `
-      <img class="noticia-imagem" src="${noticia.imagem || 'img/fallback.jpg'}"
-        onerror="this.src='img/fallback.jpg'" />
+  <img class="noticia-imagem" src="${noticia.imagem || 'img//fallback.jpg'}"
+    onerror="this.src='img/fallback.jpg'" />
 
-      <div class="noticia-faixa">
-        <h1>${noticia.titulo}</h1>
-      </div>
-    `;
+  <div class="noticia-overlay"></div>
+
+  <div class="noticia-faixa">
+    <h1>${noticia.titulo}</h1>
+  </div>
+`;
 
     conteudo.appendChild(box);
     fadeIn();
@@ -138,6 +140,8 @@ function renderNoticia(noticia) {
    RENDER CLIMA (APP STYLE)
 ========================= */
 function renderClima() {
+  if (!climaAtual) return tocar();
+
   fadeOut();
 
   setTimeout(() => {
@@ -145,68 +149,30 @@ function renderClima() {
 
     const box = document.createElement("div");
     box.className = "clima-full";
+
+    const previsaoHtml = (climaAtual.previsao || []).map(p => `
+      <div class="clima-dia">
+        <span>${p.dia}</span>
+        <strong>${p.max}°</strong>
+        <small>${p.min}°</small>
+      </div>
+    `).join("");
+
     box.innerHTML = `
-      <div class="clima-cidade" id="climaCidade">--</div>
-      <img class="clima-icon" id="climaIcon" />
-      <div class="clima-temp" id="climaTemp">--°C</div>
-      <div class="clima-desc" id="climaDesc">Carregando...</div>
-      <div class="clima-previsao" id="climaPrevisao"></div>
+      <div class="clima-cidade">${climaAtual.cidade}</div>
+      <div class="clima-temp">${climaAtual.temperatura}°</div>
+      <div class="clima-desc">${climaAtual.descricao}</div>
+
+      <div class="clima-prev">
+        ${previsaoHtml}
+      </div>
     `;
 
     conteudo.appendChild(box);
     fadeIn();
 
-    carregarClimaCompleto();
-
-    setTimeout(tocar, 10000);
+    setTimeout(tocar, 9000);
   }, 500);
-}
-
-async function carregarClimaCompleto() {
-  try {
-    // ⚠ ajuste a cidade conforme sua API atual
-    const cidade = climaAtual?.cidade || "Porteiras";
-
-    const atual = await fetch(
-      `https://api.openweathermap.org/data/2.5/weather?q=${cidade}&units=metric&lang=pt_br&appid=${API_KEY}`
-    ).then(r => r.json());
-
-    const forecast = await fetch(
-      `https://api.openweathermap.org/data/2.5/forecast?q=${cidade}&units=metric&lang=pt_br&appid=${API_KEY}`
-    ).then(r => r.json());
-
-    document.getElementById("climaCidade").innerText = atual.name;
-    document.getElementById("climaTemp").innerText = `${Math.round(atual.main.temp)}°C`;
-    document.getElementById("climaDesc").innerText = atual.weather[0].description;
-    document.getElementById("climaIcon").src =
-      `https://openweathermap.org/img/wn/${atual.weather[0].icon}@4x.png`;
-
-    // Previsão – próximos dias (1 por dia)
-    const dias = {};
-    forecast.list.forEach(item => {
-      const dia = item.dt_txt.split(" ")[0];
-      if (!dias[dia] && Object.keys(dias).length < 3) {
-        dias[dia] = item;
-      }
-    });
-
-    const previsao = document.getElementById("climaPrevisao");
-    previsao.innerHTML = "";
-
-    Object.values(dias).forEach(d => {
-      const el = document.createElement("div");
-      el.className = "clima-dia";
-      el.innerHTML = `
-        <span>${new Date(d.dt_txt).toLocaleDateString("pt-BR", { weekday: "short" })}</span>
-        <img src="https://openweathermap.org/img/wn/${d.weather[0].icon}.png">
-        <span>${Math.round(d.main.temp)}°C</span>
-      `;
-      previsao.appendChild(el);
-    });
-
-  } catch (e) {
-    document.getElementById("climaDesc").innerText = "";
-  }
 }
 
 
