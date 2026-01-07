@@ -1,33 +1,33 @@
-const express = require('express');
-const router = express.Router();
-const Parser = require('rss-parser');
-const extractOgImage = require("../utils/extractOgImage");
+const express = require("express");
+const Router = express.Router();
 
+const Parser = require("rss-parser");
 const parser = new Parser();
 
-/* ==========================
-   NOTÍCIAS VIA RSS (G1 CEARÁ)
-========================== */
-router.get("/api/noticias/:tvId", async (req, res) => {
+const extractOgImage = require("../utils/extractOgImage");
+
+const FEED_G1_CE = "https://g1.globo.com/rss/g1/ce/ceara/";
+
+Router.get("/:tvId", async (req, res) => {
   try {
+    const feed = await parser.parseURL(FEED_G1_CE);
+
     const noticias = [];
 
     for (const item of feed.items.slice(0, 5)) {
       let imagem = null;
 
-      // 1️⃣ tenta extrair imagem real da matéria
       if (item.link) {
         imagem = await extractOgImage(item.link);
       }
 
-      // 2️⃣ fallback seguro
       if (!imagem) {
-        imagem = "https://samidia.onrender.com/img/logo-g1.jpg";
+        imagem = "https://samidia.onrender.com/fallback.jpg";
       }
 
       noticias.push({
         titulo: item.title,
-        resumo: item.contentSnippet || item.content || "",
+        resumo: item.contentSnippet || "",
         link: item.link,
         imagem
       });
@@ -35,7 +35,9 @@ router.get("/api/noticias/:tvId", async (req, res) => {
 
     res.json(noticias);
   } catch (err) {
-    console.error(err);
+    console.error("Erro RSS:", err);
     res.status(500).json([]);
   }
 });
+
+module.exports = Router;
