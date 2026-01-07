@@ -95,7 +95,7 @@ html, body {
 }
 
 /* =========================
-   CLIMA – APP STYLE
+   CLIMA – APP STYLE (COM ÍCONES)
 ========================= */
 .clima-full {
   position: absolute;
@@ -118,6 +118,12 @@ html, body {
 .clima-temp   { font-size: 96px; font-weight: bold; }
 .clima-desc   { font-size: 26px; margin-bottom: 30px; }
 
+.clima-icon {
+  width: 160px;
+  height: 160px;
+  margin: 10px 0;
+}
+
 .clima-prev {
   display: flex;
   gap: 40px;
@@ -125,6 +131,11 @@ html, body {
 
 .clima-dia {
   text-align: center;
+}
+
+.clima-dia img {
+  width: 48px;
+  height: 48px;
 }
 
 .clima-dia strong {

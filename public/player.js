@@ -11,6 +11,30 @@ let indice = 0;
 let anunciosRodados = 0;
 
 /* =========================
+   MAPA DE ÍCONES DE CLIMA
+========================= */
+const CLIMA_ICONS = {
+  "céu limpo": "01d",
+  "poucas nuvens": "02d",
+  "nuvens dispersas": "03d",
+  "nublado": "04d",
+  "nuvens": "04d",
+  "chuva fraca": "10d",
+  "chuva": "09d",
+  "trovoada": "11d",
+  "neve": "13d",
+  "névoa": "50d"
+};
+
+function iconFromDescricao(desc = "") {
+  desc = desc.toLowerCase();
+  for (const key in CLIMA_ICONS) {
+    if (desc.includes(key)) return CLIMA_ICONS[key];
+  }
+  return "01d";
+}
+
+/* =========================
    UTIL
 ========================= */
 function fadeOut() {
@@ -85,7 +109,7 @@ function renderNoticia(n) {
   box.className = "noticia-full";
   box.innerHTML = `
     <img class="noticia-imagem" src="${n.imagem || "/fallback.jpg"}"
-      onerror="this.src='/fallback.jpg'"/>
+      onerror="this.src='/fallback.jpg'" />
     <div class="noticia-overlay"></div>
     <div class="noticia-faixa">
       <h1>${n.titulo}</h1>
@@ -101,19 +125,26 @@ function renderNoticia(n) {
 function renderClima() {
   if (!climaAtual) return tocar();
 
+  const iconAtual = iconFromDescricao(climaAtual.descricao);
+
+  const prev = (climaAtual.previsao || []).map(p => {
+    const icon = iconFromDescricao(p.descricao);
+    return `
+      <div class="clima-dia">
+        <span>${p.dia}</span>
+        <img src="https://openweathermap.org/img/wn/${icon}.png" />
+        <strong>${p.max}°</strong>
+        <small>${p.min}°</small>
+      </div>
+    `;
+  }).join("");
+
   const box = document.createElement("div");
   box.className = "clima-full";
-
-  const prev = (climaAtual.previsao || []).map(p => `
-    <div class="clima-dia">
-      <span>${p.dia}</span>
-      <strong>${p.max}°</strong>
-      <small>${p.min}°</small>
-    </div>
-  `).join("");
-
   box.innerHTML = `
     <div class="clima-cidade">${climaAtual.cidade}</div>
+    <img class="clima-icon"
+      src="https://openweathermap.org/img/wn/${iconAtual}@4x.png" />
     <div class="clima-temp">${climaAtual.temperatura}°</div>
     <div class="clima-desc">${climaAtual.descricao}</div>
     <div class="clima-prev">${prev}</div>
