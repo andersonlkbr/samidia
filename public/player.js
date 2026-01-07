@@ -146,41 +146,42 @@ function renderNoticia(noticia) {
    RENDER CLIMA FULLSCREEN
 ========================= */
 function renderClima() {
-  if (!climaAtual) {
-    return tocar();
-  }
-
   fadeOut();
 
   setTimeout(() => {
     limpar();
 
-    const clima = document.createElement("div");
-    clima.className = "clima-full";
-    clima.innerHTML = `
-      <div class="clima-cidade">${climaAtual.cidade}</div>
-      <div class="clima-temp">${climaAtual.temperatura}°C</div>
-      <div class="clima-desc">${climaAtual.descricao}</div>
+    const box = document.createElement("div");
+    box.className = "clima-full";
+    box.innerHTML = `
+      <div class="clima-cidade">Clima</div>
+      <div class="clima-temp">--°C</div>
+      <div class="clima-desc">Atualizando...</div>
+      <div class="clima-extra"></div>
     `;
 
-    conteudo.appendChild(clima);
+    conteudo.appendChild(box);
     fadeIn();
 
+    atualizarClimaTela();
+
+    // Clima fica 8 segundos e segue
     setTimeout(tocar, 8000);
   }, 500);
 }
-
 
 async function atualizarClimaTela() {
   try {
     const res = await fetch(`/api/clima/${tvId}`);
     const c = await res.json();
 
-    document.getElementById("climaCidade").innerText = c.cidade;
-    document.getElementById("climaTemp").innerText = `${c.temperatura}°C`;
-    document.getElementById("climaDesc").innerText = c.descricao;
-  } catch (e) {
-    document.getElementById("climaDesc").innerText = "";
+    document.querySelector(".clima-cidade").innerText = c.cidade;
+    document.querySelector(".clima-temp").innerText = `${c.temperatura}°C`;
+    document.querySelector(".clima-desc").innerText = c.descricao;
+    document.querySelector(".clima-extra").innerText =
+      `Atualizado agora • ${new Date().toLocaleTimeString("pt-BR")}`;
+  } catch {
+    document.querySelector(".clima-desc").innerText = "";
   }
 }
 
