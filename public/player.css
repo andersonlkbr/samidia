@@ -21,13 +21,25 @@ html, body {
   height: calc(100vh - 42px);
   position: relative;
   overflow: hidden;
-  transition: opacity 0.5s ease-in-out;
+  opacity: 1;
+  transition: opacity 0.8s ease-in-out;
 }
 
 /* =========================
    MÍDIAS
 ========================= */
-.midia-img,
+@keyframes kenburns {
+  from { transform: scale(1); }
+  to   { transform: scale(1.08); }
+}
+
+.midia-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  animation: kenburns 12s linear forwards;
+}
+
 .midia-video {
   width: 100%;
   height: 100%;
@@ -40,16 +52,14 @@ html, body {
 }
 
 /* =========================
-   NOTÍCIA – TELA CHEIA (DEFINITIVO)
+   NOTÍCIA – DEFINITIVO
 ========================= */
 .noticia-full {
   position: absolute;
   inset: 0;
   background: black;
-  overflow: hidden;
 }
 
-/* IMAGEM DA NOTÍCIA */
 .noticia-imagem {
   position: absolute;
   inset: 0;
@@ -58,43 +68,34 @@ html, body {
   object-fit: cover;
 }
 
-/* OVERLAY GRADIENTE (AJUDA LEGIBILIDADE) */
 .noticia-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to top,
     rgba(0,0,0,0.75) 0%,
-    rgba(0,0,0,0.45) 35%,
-    rgba(0,0,0,0.1) 60%,
+    rgba(0,0,0,0.4) 40%,
+    rgba(0,0,0,0.1) 70%,
     rgba(0,0,0,0) 100%
   );
 }
 
-/* FAIXA VERMELHA (NUNCA SOME) */
 .noticia-faixa {
   position: absolute;
   bottom: 0;
-  left: 0;
   width: 100%;
   background: #b91c1c;
   color: white;
   padding: 28px 40px;
-  z-index: 2;
 }
 
-/* TÍTULO */
 .noticia-faixa h1 {
   font-size: clamp(28px, 4vw, 52px);
-  font-weight: bold;
   line-height: 1.2;
-  margin: 0;
 }
 
-
-
 /* =========================
-   CLIMA – ESTILO APP
+   CLIMA – APP STYLE
 ========================= */
 .clima-full {
   position: absolute;
@@ -105,59 +106,31 @@ html, body {
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 40px;
+  animation: fadeUp 0.8s ease forwards;
 }
 
-/* Cidade */
-.clima-cidade {
-  font-size: clamp(28px, 3vw, 44px);
-  margin-bottom: 10px;
-  opacity: 0.9;
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
-/* Ícone grande */
-.clima-icon {
-  width: 160px;
-  height: 160px;
-}
+.clima-cidade { font-size: 42px; }
+.clima-temp   { font-size: 96px; font-weight: bold; }
+.clima-desc   { font-size: 26px; margin-bottom: 30px; }
 
-/* Temperatura atual */
-.clima-temp {
-  font-size: clamp(72px, 7vw, 120px);
-  font-weight: bold;
-  margin-top: 10px;
-}
-
-/* Descrição */
-.clima-desc {
-  font-size: clamp(18px, 2vw, 28px);
-  margin-bottom: 40px;
-  text-transform: capitalize;
-  opacity: 0.9;
-}
-
-/* Previsão */
-.clima-previsao {
+.clima-prev {
   display: flex;
   gap: 40px;
 }
 
 .clima-dia {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  font-size: 18px;
+  text-align: center;
 }
 
-.clima-dia img {
-  width: 64px;
-  height: 64px;
+.clima-dia strong {
+  display: block;
+  font-size: 32px;
 }
-
-.clima-dia span {
-  margin-top: 6px;
-}
-
 
 /* =========================
    RODAPÉ
