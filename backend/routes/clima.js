@@ -10,7 +10,7 @@ const BASE_URL = "https://api.openweathermap.org/data/2.5";
 router.get("/:tvId", async (req, res) => {
   try {
     // Por enquanto cidade fixa (próximo passo: por TV)
-    const cidade = "Fortaleza";
+    const cidade = "Porteiras";
 
     /* =========================
        CLIMA ATUAL
