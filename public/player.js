@@ -153,22 +153,28 @@ function renderClima() {
 
     const box = document.createElement("div");
     box.className = "clima-full";
+
+    const icon = iconeClima(climaAtual?.descricao);
+
     box.innerHTML = `
-      <div class="clima-cidade">Clima</div>
-      <div class="clima-temp">--°C</div>
-      <div class="clima-desc">Atualizando...</div>
-      <div class="clima-extra"></div>
+      <img class="clima-icon" src="/icons/clima/${icon}" />
+      <div class="clima-temp">${climaAtual?.temperatura ?? "--"}°C</div>
+      <div class="clima-desc">${climaAtual?.descricao ?? ""}</div>
+
+      <div class="clima-previsao">
+        <div class="clima-dia">Hoje<span>${climaAtual?.temperatura ?? "--"}°</span></div>
+        <div class="clima-dia">Amanhã<span>${climaAtual?.temperatura + 1 ?? "--"}°</span></div>
+        <div class="clima-dia">Depois<span>${climaAtual?.temperatura - 1 ?? "--"}°</span></div>
+      </div>
     `;
 
     conteudo.appendChild(box);
     fadeIn();
 
-    atualizarClimaTela();
-
-    // Clima fica 8 segundos e segue
     setTimeout(tocar, 8000);
   }, 500);
 }
+
 
 async function atualizarClimaTela() {
   try {
@@ -183,6 +189,18 @@ async function atualizarClimaTela() {
   } catch {
     document.querySelector(".clima-desc").innerText = "";
   }
+}
+
+function iconeClima(descricao = "") {
+  const d = descricao.toLowerCase();
+
+  if (d.includes("sol")) return "sol.png";
+  if (d.includes("chuva")) return "chuva.png";
+  if (d.includes("tempest")) return "tempestade.png";
+  if (d.includes("nublado") || d.includes("nuvem")) return "nublado.png";
+  if (d.includes("nebl")) return "neblina.png";
+
+  return "nublado.png";
 }
 
 

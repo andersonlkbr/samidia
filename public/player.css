@@ -133,3 +133,53 @@ html, body {
   font-size: 20px;
   opacity: 0.8;
 }
+
+/* =========================
+   CLIMA – ESTILO APP
+========================= */
+
+.clima-full {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, #0a2a5e, #0d47a1);
+  color: white;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.clima-icon {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 20px;
+}
+
+.clima-temp {
+  font-size: 96px;
+  font-weight: bold;
+}
+
+.clima-desc {
+  font-size: 28px;
+  margin-bottom: 20px;
+}
+
+.clima-previsao {
+  display: flex;
+  gap: 40px;
+  margin-top: 20px;
+}
+
+.clima-dia {
+  text-align: center;
+  font-size: 18px;
+}
+
+.clima-dia span {
+  display: block;
+  font-size: 22px;
+  font-weight: bold;
+  margin-top: 6px;
+}
+
