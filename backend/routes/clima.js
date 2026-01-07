@@ -1,54 +1,65 @@
-const express = require('express');
-const axios = require('axios');
-const db = require('../db');
-
+const express = require("express");
 const router = express.Router();
+const fetch = require("node-fetch");
 
-// ⚠️ COLOQUE SUA API KEY REAL AQUI
-const API_KEY = 'eb1ed5eca10766b5becb02b69d67e5e4';
+// SUA API KEY FIXA
+const API_KEY = "eb1ed5eca10766b5becb02b69d67e5e4";
 
-router.get('/:tvId', (req, res) => {
-  const { tvId } = req.params;
+const BASE_URL = "https://api.openweathermap.org/data/2.5";
 
-  db.get(
-    'SELECT cidade, estado FROM tvs WHERE id = ?',
-    [tvId],
-    async (err, tv) => {
-      if (err) {
-        console.error('Erro DB:', err);
-        return res.status(500).json({ erro: 'Erro no banco' });
-      }
+router.get("/:tvId", async (req, res) => {
+  try {
+    // Por enquanto cidade fixa (próximo passo: por TV)
+    const cidade = "Fortaleza";
 
-      if (!tv) {
-        return res.status(404).json({ erro: 'TV não encontrada' });
-      }
+    /* =========================
+       CLIMA ATUAL
+    ========================= */
+    const atualRes = await fetch(
+      `${BASE_URL}/weather?q=${cidade}&appid=${API_KEY}&units=metric&lang=pt_br`
+    );
+    const atual = await atualRes.json();
 
-      try {
-        const resposta = await axios.get(
-          'https://api.openweathermap.org/data/2.5/weather',
-          {
-            params: {
-              q: `${tv.cidade},BR`,
-              units: 'metric',
-              lang: 'pt_br',
-              appid: API_KEY
-            }
-          }
-        );
+    /* =========================
+       PREVISÃO (3 DIAS)
+    ========================= */
+    const prevRes = await fetch(
+      `${BASE_URL}/forecast?q=${cidade}&appid=${API_KEY}&units=metric&lang=pt_br`
+    );
+    const prev = await prevRes.json();
 
-        const clima = resposta.data;
+    const dias = {};
+    prev.list.forEach(item => {
+      const data = item.dt_txt.split(" ")[0];
+      if (!dias[data]) dias[data] = [];
+      dias[data].push(item);
+    });
 
-        res.json({
-          cidade: tv.cidade,
-          temperatura: Math.round(clima.main.temp),
-          descricao: clima.weather[0].description
-        });
-      } catch (error) {
-        console.error('Erro OpenWeather:', error.response?.data || error.message);
-        res.status(500).json({ erro: 'Erro ao buscar clima' });
-      }
-    }
-  );
+    const previsao = Object.keys(dias)
+      .slice(0, 3)
+      .map((data, i) => {
+        const temps = dias[data].map(d => d.main.temp);
+        return {
+          dia: i === 0 ? "Hoje" : i === 1 ? "Amanhã" : "Depois",
+          min: Math.round(Math.min(...temps)),
+          max: Math.round(Math.max(...temps)),
+          descricao: dias[data][0].weather[0].description
+        };
+      });
+
+    /* =========================
+       RESPOSTA FINAL
+    ========================= */
+    res.json({
+      cidade: atual.name,
+      temperatura: Math.round(atual.main.temp),
+      descricao: atual.weather[0].description,
+      previsao
+    });
+  } catch (err) {
+    console.error("Erro clima:", err);
+    res.status(500).json({});
+  }
 });
 
 module.exports = router;
