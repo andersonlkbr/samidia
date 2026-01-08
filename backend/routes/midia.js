@@ -103,8 +103,12 @@ router.delete("/:id", (req, res) => {
     [id],
     async (err, row) => {
       if (row?.url) {
-        await deleteFromR2(row.url);
-      }
+  try {
+    await deleteFromR2(row.url);
+  } catch (e) {
+    console.warn("⚠️ Falha ao deletar do R2:", e.message);
+  }
+}
 
       db.run(
         `DELETE FROM midias WHERE id = ?`,
