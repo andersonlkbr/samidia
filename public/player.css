@@ -37,6 +37,9 @@ html, body {
    NOTÍCIA – TELA CHEIA (FIXA)
 ========================= */
 
+/* =========================
+   NOTÍCIA – TELA CHEIA (TV SAFE)
+========================= */
 .noticia-full {
   position: absolute;
   inset: 0;
@@ -55,15 +58,17 @@ html, body {
   object-fit: cover;
 }
 
-/* faixa vermelha FIXA */
+/* faixa vermelha sobreposta */
 .noticia-faixa {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
+
   background: #b91c1c;
   padding: 28px 40px;
-  z-index: 5;
+
+  z-index: 2;
 }
 
 /* título */
@@ -71,7 +76,6 @@ html, body {
   color: white;
   font-size: clamp(28px, 4vw, 52px);
   line-height: 1.2;
-  margin: 0;
 }
 
 /* CLIMA */
