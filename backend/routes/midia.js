@@ -1,6 +1,5 @@
 const express = require("express");
 const multer = require("multer");
-const path = require("path");
 const router = express.Router();
 
 const db = require("../database");
@@ -25,9 +24,9 @@ router.get("/:tvId", (req, res) => {
     (err, rows) => {
       if (err) {
         console.error("Erro listar mídias:", err);
-        return res.status(500).json({ erro: "Erro ao listar mídias" });
+        return res.status(500).json([]);
       }
-      res.json(rows);
+      res.json(rows || []);
     }
   );
 });
@@ -44,13 +43,15 @@ router.post("/:tvId", upload.single("arquivo"), async (req, res) => {
       return res.status(400).json({ erro: "Arquivo não enviado" });
     }
 
+    const tipo = req.file.mimetype.startsWith("video")
+      ? "video"
+      : "imagem";
+
     const url = await uploadToR2(
       req.file.buffer,
       req.file.originalname,
       req.file.mimetype
     );
-
-    const tipo = req.file.mimetype.startsWith("video") ? "video" : "imagem";
 
     db.run(
       `
@@ -58,7 +59,7 @@ router.post("/:tvId", upload.single("arquivo"), async (req, res) => {
       VALUES (?, ?, ?, ?, ?, 1)
       `,
       [tvId, tipo, url, duracao || 10, regiao || "Todas"],
-      function (err) {
+      err => {
         if (err) {
           console.error("Erro salvar mídia:", err);
           return res.status(500).json({ erro: "Erro ao salvar mídia" });
@@ -93,7 +94,7 @@ router.put("/:id", (req, res) => {
 });
 
 /* =========================
-   EXCLUIR MÍDIA
+   EXCLUIR MÍDIA (BLINDADO)
 ========================= */
 router.delete("/:id", (req, res) => {
   const { id } = req.params;
@@ -101,23 +102,31 @@ router.delete("/:id", (req, res) => {
   db.get(
     `SELECT url FROM midias WHERE id = ?`,
     [id],
-    async (err, row) => {
-      if (row?.url) {
-  try {
-    await deleteFromR2(row.url);
-  } catch (e) {
-    console.warn("⚠️ Falha ao deletar do R2:", e.message);
-  }
-}
+    (err, row) => {
+      if (err) {
+        console.error(err);
+        return res.status(500).json({ erro: "Erro buscar mídia" });
+      }
 
+      const url = row?.url;
+
+      // PRIMEIRO remove do banco (NUNCA trava)
       db.run(
         `DELETE FROM midias WHERE id = ?`,
         [id],
         err2 => {
           if (err2) {
             console.error(err2);
-            return res.status(500).json({ erro: "Erro ao excluir mídia" });
+            return res
+              .status(500)
+              .json({ erro: "Erro ao excluir mídia" });
           }
+
+          // Depois tenta remover do R2 (background)
+          if (url) {
+            deleteFromR2(url);
+          }
+
           res.json({ sucesso: true });
         }
       );

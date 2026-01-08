@@ -1,56 +1,54 @@
-const { S3Client, PutObjectCommand, DeleteObjectCommand } = require("@aws-sdk/client-s3");
-
 const {
-  R2_ACCOUNT_ID,
-  R2_ACCESS_KEY,
-  R2_SECRET_KEY,
-  R2_BUCKET,
-  R2_PUBLIC_URL
-} = process.env;
+  PutObjectCommand,
+  DeleteObjectCommand,
+} = require("@aws-sdk/client-s3");
 
-if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY || !R2_SECRET_KEY || !R2_BUCKET || !R2_PUBLIC_URL) {
-  throw new Error("❌ Variáveis do R2 não configuradas corretamente");
-}
+const r2 = require("../config/r2");
 
-const s3 = new S3Client({
-  region: "auto",
-  endpoint: `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: R2_ACCESS_KEY,
-    secretAccessKey: R2_SECRET_KEY
-  }
-});
+const BUCKET = process.env.R2_BUCKET;
+const PUBLIC_URL = process.env.R2_PUBLIC_URL;
 
-async function uploadToR2(fileBuffer, fileName, mimeType) {
-  const key = `midia/${Date.now()}-${fileName}`;
+/* =========================
+   UPLOAD
+========================= */
+async function uploadToR2(buffer, filename, mimetype) {
+  const key = `midia/${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2)}-${filename}`;
 
-  await s3.send(
+  await r2.send(
     new PutObjectCommand({
-      Bucket: R2_BUCKET,
+      Bucket: BUCKET,
       Key: key,
-      Body: fileBuffer,
-      ContentType: mimeType
+      Body: buffer,
+      ContentType: mimetype,
     })
   );
 
-  return `${R2_PUBLIC_URL}/${key}`;
+  return `${PUBLIC_URL}/${key}`;
 }
 
+/* =========================
+   DELETE (À PROVA DE BUG)
+========================= */
 async function deleteFromR2(url) {
-  if (!url) return;
+  try {
+    if (!url) return;
 
-  const key = url.split(`${R2_PUBLIC_URL}/`)[1];
-  if (!key) return;
+    const key = new URL(url).pathname.replace(/^\/+/, "");
 
-  await s3.send(
-    new DeleteObjectCommand({
-      Bucket: R2_BUCKET,
-      Key: key
-    })
-  );
+    await r2.send(
+      new DeleteObjectCommand({
+        Bucket: BUCKET,
+        Key: key,
+      })
+    );
+  } catch (err) {
+    console.error("Erro ao excluir do R2:", err);
+  }
 }
 
 module.exports = {
   uploadToR2,
-  deleteFromR2
+  deleteFromR2,
 };
