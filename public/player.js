@@ -115,18 +115,41 @@ function renderNoticia(noticia) {
   }, 600);
 }
 
-function getIconClima(condicao) {
-  condicao = condicao.toLowerCase();
+function getIconClima(descricao) {
 
-  if (condicao.includes("clear")) return "/icones/sol.png";
-  if (condicao.includes("cloud")) return "/icones/nublado.png";
-  if (condicao.includes("rain") || condicao.includes("drizzle")) return "/icones/chuva.png";
-  if (condicao.includes("thunder")) return "/icones/tempestade.png";
-  if (condicao.includes("snow")) return "/icones/neve.png";
-  if (condicao.includes("mist") || condicao.includes("fog")) return "/icones/neblina.png";
+    if (!descricao || typeof descricao !== "string") {
 
-  return "/icones/nublado.png";
-}
+        return "☁️"; // ícone padrão seguro
+
+          }
+
+
+
+            const d = descricao.toLowerCase();
+
+
+
+              if (d.includes("chuva")) return "🌧️";
+
+                if (d.includes("tempest")) return "⛈️";
+
+                  if (d.includes("nublado")) return "☁️";
+
+                    if (d.includes("nuvens")) return "☁️";
+
+                      if (d.includes("sol")) return "☀️";
+
+                        if (d.includes("limpo")) return "☀️";
+
+                          if (d.includes("neblina")) return "🌫️";
+
+
+
+                            return "🌡️"; // fallback final
+
+                            }
+
+
 
 /* =========================
    CLIMA – FULLSCREEN TV
