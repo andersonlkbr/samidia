@@ -80,7 +80,7 @@ html, body {
 
 /* CLIMA */
 /* =========================
-   CLIMA – TELA CHEIA (TV SAFE)
+   CLIMA – TELA CHEIA (FIXO)
 ========================= */
 .clima-full {
   position: absolute;
@@ -91,44 +91,46 @@ html, body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+}
 
-  padding: 40px;
+/* TOPO – cidade */
+.clima-cidade {
+  margin-top: 48px;
+  font-size: 42px;
+  font-weight: bold;
+}
+
+/* CENTRO – clima atual */
+.clima-principal {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
   text-align: center;
 }
 
-/* cidade */
-.clima-cidade {
-  font-size: 42px;
-  font-weight: bold;
-  margin-bottom: 40px;
-}
-
-/* bloco central */
-.clima-principal {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-/* ícone */
 .clima-icon {
   font-size: 120px;
   line-height: 1;
-  margin-bottom: 20px;
+  margin-bottom: 10px;
 }
 
-/* temperatura */
 .clima-temp {
   font-size: 96px;
   font-weight: bold;
-  line-height: 1;
 }
 
-/* descrição */
 .clima-desc {
   font-size: 28px;
-  margin-top: 10px;
+  opacity: 0.9;
+}
+
+/* reserva espaço inferior (evita pulo visual) */
+.clima-footer {
+  height: 60px;
 }
 
 /* RODAPÉ */

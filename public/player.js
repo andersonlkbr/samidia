@@ -304,6 +304,8 @@ async function renderClima() {
           <div class="clima-temp">${dados.temperatura ?? "--"}°</div>
           <div class="clima-desc">${dados.descricao || ""}</div>
         </div>
+  
+      <div class="clima-footer"></div>
       </div>
     `;
 
