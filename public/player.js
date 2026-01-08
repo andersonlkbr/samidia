@@ -82,7 +82,6 @@ async function renderMidia(item) {
       elemento.muted = true;
       elemento.onended = tocar;
       conteudo.appendChild(elemento);
-      heartbeat();
       fadeIn();
     }
   }, 600);
@@ -110,7 +109,6 @@ function renderNoticia(noticia) {
     `;
 
     conteudo.appendChild(box);
-    heartbeat();
     fadeIn();
 
     setTimeout(tocar, 10000);
@@ -222,7 +220,6 @@ async function atualizarClimaTela() {
    LOOP PRINCIPAL
 ========================= */
 function tocar() {
-  heartbeat();
   if (!playlist.length) return;
 
   if (anunciosRodados === 2 && noticias.length) {
