@@ -118,31 +118,75 @@ function renderNoticia(noticia) {
 /* =========================
    CLIMA – FULLSCREEN
 ========================= */
-async function renderClima() {
+function renderClima() {
   fadeOut();
 
-  setTimeout(async () => {
+  setTimeout(() => {
     limpar();
 
     const box = document.createElement("div");
     box.className = "clima-full";
+
     box.innerHTML = `
-      <div class="clima-cidade">--</div>
-      <div class="clima-temp">--°</div>
-      <div class="clima-desc">Carregando...</div>
+      <div class="clima-topo">
+        <div class="clima-cidade">--</div>
+      </div>
+
+      <div class="clima-atual">
+        <img class="clima-icone" src="" alt="">
+        <div class="clima-temp">--°</div>
+        <div class="clima-desc"></div>
+      </div>
+
+      <div class="clima-prev">
+        <div class="clima-dia"></div>
+        <div class="clima-dia"></div>
+        <div class="clima-dia"></div>
+      </div>
     `;
+
     conteudo.appendChild(box);
     fadeIn();
 
-    try {
-      const c = await fetch(`/api/clima/${tvId}`).then(r => r.json());
-      box.querySelector(".clima-cidade").innerText = c.cidade;
-      box.querySelector(".clima-temp").innerText = `${c.temperatura}°`;
-      box.querySelector(".clima-desc").innerText = c.descricao;
-    } catch {}
+    atualizarClimaTela();
 
-    setTimeout(tocar, 8000);
-  }, 600);
+    setTimeout(tocar, 9000);
+  }, 500);
+}
+
+async function atualizarClimaTela() {
+  try {
+    const res = await fetch(`/api/clima/${tvId}`);
+    const c = await res.json();
+
+    document.querySelector(".clima-cidade").innerText = c.cidade;
+    document.querySelector(".clima-temp").innerText = `${c.temperatura}°`;
+    document.querySelector(".clima-desc").innerText = c.descricao;
+
+    const icone = document.querySelector(".clima-icone");
+    if (c.icone) {
+      icone.src = `https://openweathermap.org/img/wn/${c.icone}@4x.png`;
+      icone.style.display = "block";
+    } else {
+      icone.style.display = "none";
+    }
+
+    const dias = document.querySelectorAll(".clima-dia");
+    if (c.previsao && c.previsao.length) {
+      dias.forEach((el, i) => {
+        const d = c.previsao[i];
+        if (!d) return;
+
+        el.innerHTML = `
+          <div>${d.dia}</div>
+          <img src="https://openweathermap.org/img/wn/${d.icone}@2x.png">
+          <div>${d.max}° / ${d.min}°</div>
+        `;
+      });
+    }
+  } catch (e) {
+    console.warn("Erro clima:", e);
+  }
 }
 
 /* =========================

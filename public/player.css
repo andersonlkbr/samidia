@@ -89,34 +89,61 @@ html, body {
 }
 
 /* =========================
-   CLIMA – TELA CHEIA REAL
+   CLIMA – ESTILO APP
 ========================= */
+
 .clima-full {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: linear-gradient(180deg, #0a2a5e, #0d47a1);
   color: white;
-  text-align: center;
-  padding-top: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px;
 }
 
-.clima-cidade {
+.clima-topo {
+  text-align: center;
   font-size: 48px;
-  margin-bottom: 20px;
+  font-weight: bold;
+}
+
+.clima-atual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.clima-icone {
+  width: 180px;
+  height: 180px;
 }
 
 .clima-temp {
-  font-size: 110px;
+  font-size: 96px;
   font-weight: bold;
 }
 
 .clima-desc {
-  font-size: 30px;
-  margin-top: 10px;
+  font-size: 28px;
+  text-transform: capitalize;
 }
+
+.clima-prev {
+  display: flex;
+  justify-content: space-between;
+}
+
+.clima-dia {
+  text-align: center;
+  font-size: 20px;
+}
+
+.clima-dia img {
+  width: 64px;
+}
+
 
 /* =========================
    RODAPÉ
