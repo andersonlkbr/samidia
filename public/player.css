@@ -75,50 +75,56 @@ html, body {
 }
 
 /* CLIMA */
+/* =========================
+   CLIMA – TELA CHEIA (TV SAFE)
+========================= */
 .clima-full {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, #0a2a5e, #0d47a1);
   color: white;
+
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  align-items: center;
+  justify-content: center;
+
   padding: 40px;
+  text-align: center;
 }
 
+/* cidade */
 .clima-cidade {
   font-size: 42px;
   font-weight: bold;
+  margin-bottom: 40px;
 }
 
+/* bloco central */
 .clima-principal {
-  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
+/* ícone */
 .clima-icon {
   font-size: 120px;
+  line-height: 1;
+  margin-bottom: 20px;
 }
 
+/* temperatura */
 .clima-temp {
   font-size: 96px;
   font-weight: bold;
+  line-height: 1;
 }
 
+/* descrição */
 .clima-desc {
   font-size: 28px;
-}
-
-.clima-previsao {
-  display: flex;
-  justify-content: space-around;
-}
-
-.clima-dia {
-  text-align: center;
-}
-
-.clima-dia-icon {
-  font-size: 42px;
+  margin-top: 10px;
 }
 
 /* RODAPÉ */
