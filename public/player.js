@@ -50,8 +50,17 @@ function preloadMidia(midia) {
    CARREGAR DADOS
 ========================= */
 async function carregarDados() {
-  playlist = await fetch(`/api/playlist/${tvId}`).then(r => r.json());
-  noticias = await fetch(`/api/noticias/${tvId}`).then(r => r.json());
+  try {
+    playlist = await fetch(`/api/playlist/${tvId}`).then(r => r.json());
+  } catch {
+    playlist = [];
+  }
+
+  try {
+    noticias = await fetch(`/api/noticias/${tvId}`).then(r => r.json());
+  } catch {
+    noticias = [];
+  }
 }
 
 /* =========================
@@ -68,7 +77,7 @@ async function renderMidia(item) {
     if (item.tipo === "imagem") {
       elemento.className = "midia-img";
       elemento.onerror = () => {
-        elemento.src = "/fallback.jpg";
+        elemento.src = "/img/fallback.jpg";
         elemento.classList.add("fallback");
       };
       conteudo.appendChild(elemento);
@@ -84,11 +93,11 @@ async function renderMidia(item) {
       conteudo.appendChild(elemento);
       fadeIn();
     }
-  }, 600);
+  }, 500);
 }
 
 /* =========================
-   NOTÍCIA – PADRÃO PORTAL
+   NOTÍCIA – PORTAL TV
 ========================= */
 function renderNoticia(noticia) {
   fadeOut();
@@ -101,10 +110,11 @@ function renderNoticia(noticia) {
 
     box.innerHTML = `
       <div class="noticia-imagem">
-        <img src="${noticia.imagem || '/img/fallback.jpg'}" />
+        <img src="${noticia.imagem || '/img/fallback.jpg'}"
+             onerror="this.src='/img/fallback.jpg'">
       </div>
       <div class="noticia-faixa">
-        <h1>${noticia.titulo}</h1>
+        <h1>${noticia.titulo || ""}</h1>
       </div>
     `;
 
@@ -112,47 +122,27 @@ function renderNoticia(noticia) {
     fadeIn();
 
     setTimeout(tocar, 10000);
-  }, 600);
+  }, 500);
 }
 
-function getIconClima(descricao) {
+/* =========================
+   CLIMA – ÍCONES TV SAFE
+========================= */
+function getIconClima(desc) {
+  if (!desc || typeof desc !== "string") return "☁️";
+  const d = desc.toLowerCase();
 
-    if (!descricao || typeof descricao !== "string") {
+  if (d.includes("chuva")) return "🌧️";
+  if (d.includes("tempest")) return "⛈️";
+  if (d.includes("nublado") || d.includes("nuvens")) return "☁️";
+  if (d.includes("sol") || d.includes("limpo")) return "☀️";
+  if (d.includes("neblina")) return "🌫️";
 
-        return "☁️"; // ícone padrão seguro
-
-          }
-
-
-
-            const d = descricao.toLowerCase();
-
-
-
-              if (d.includes("chuva")) return "🌧️";
-
-                if (d.includes("tempest")) return "⛈️";
-
-                  if (d.includes("nublado")) return "☁️";
-
-                    if (d.includes("nuvens")) return "☁️";
-
-                      if (d.includes("sol")) return "☀️";
-
-                        if (d.includes("limpo")) return "☀️";
-
-                          if (d.includes("neblina")) return "🌫️";
-
-
-
-                            return "🌡️"; // fallback final
-
-                            }
-
-
+  return "🌡️";
+}
 
 /* =========================
-   CLIMA – FULLSCREEN TV
+   CLIMA – FULLSCREEN (CORRIGIDO)
 ========================= */
 async function renderClima() {
   fadeOut();
@@ -165,30 +155,32 @@ async function renderClima() {
       const res = await fetch(`/api/clima/${tvId}`);
       dados = await res.json();
     } catch {
-      return tocar(); // falha segura
+      return tocar();
     }
 
-    const iconAtual = getIconClima(dados.condicao || dados.descricao);
+    const previsao = Array.isArray(dados.previsao)
+      ? dados.previsao.slice(0, 3)
+      : [];
 
     const box = document.createElement("div");
     box.className = "clima-full";
 
     box.innerHTML = `
-      <div class="clima-topo">
-        <div class="clima-cidade">${dados.cidade}</div>
+      <div class="clima-cidade">
+        ${dados.cidade || ""}
       </div>
 
       <div class="clima-principal">
-        <img class="clima-icon" src="${iconAtual}" />
-        <div class="clima-temp">${dados.temperatura}°</div>
-        <div class="clima-desc">${dados.descricao}</div>
+        <div class="clima-icon">${getIconClima(dados.descricao)}</div>
+        <div class="clima-temp">${dados.temperatura ?? "--"}°</div>
+        <div class="clima-desc">${dados.descricao || ""}</div>
       </div>
 
       <div class="clima-previsao">
-        ${dados.previsao.slice(0,3).map(d => `
+        ${previsao.map(d => `
           <div class="clima-dia">
             <div class="clima-dia-nome">${d.dia}</div>
-            <img src="${getIconClima(d.condicao)}" />
+            <div class="clima-dia-icon">${getIconClima(d.condicao)}</div>
             <div class="clima-max">${d.max}°</div>
             <div class="clima-min">${d.min}°</div>
           </div>
@@ -203,42 +195,6 @@ async function renderClima() {
   }, 500);
 }
 
-
-async function atualizarClimaTela() {
-  try {
-    const res = await fetch(`/api/clima/${tvId}`);
-    const c = await res.json();
-
-    document.querySelector(".clima-cidade").innerText = c.cidade;
-    document.querySelector(".clima-temp").innerText = `${c.temperatura}°`;
-    document.querySelector(".clima-desc").innerText = c.descricao;
-
-    const icone = document.querySelector(".clima-icone");
-    if (c.icone) {
-      icone.src = `https://openweathermap.org/img/wn/${c.icone}@4x.png`;
-      icone.style.display = "block";
-    } else {
-      icone.style.display = "none";
-    }
-
-    const dias = document.querySelectorAll(".clima-dia");
-    if (c.previsao && c.previsao.length) {
-      dias.forEach((el, i) => {
-        const d = c.previsao[i];
-        if (!d) return;
-
-        el.innerHTML = `
-          <div>${d.dia}</div>
-          <img src="https://openweathermap.org/img/wn/${d.icone}@2x.png">
-          <div>${d.max}° / ${d.min}°</div>
-        `;
-      });
-    }
-  } catch (e) {
-    console.warn("Erro clima:", e);
-  }
-}
-
 /* =========================
    LOOP PRINCIPAL
 ========================= */
@@ -247,7 +203,9 @@ function tocar() {
 
   if (anunciosRodados === 2 && noticias.length) {
     anunciosRodados++;
-    return renderNoticia(noticias[Math.floor(Math.random() * noticias.length)]);
+    return renderNoticia(
+      noticias[Math.floor(Math.random() * noticias.length)]
+    );
   }
 
   if (anunciosRodados === 4) {
