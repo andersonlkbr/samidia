@@ -5,34 +5,8 @@ const conteudo = document.getElementById("conteudo");
 
 let playlist = [];
 let noticias = [];
-let climaAtual = null;
-
 let indice = 0;
 let anunciosRodados = 0;
-
-/* =========================
-   MAPA DE ÍCONES DE CLIMA
-========================= */
-const CLIMA_ICONS = {
-  "céu limpo": "01d",
-  "poucas nuvens": "02d",
-  "nuvens dispersas": "03d",
-  "nublado": "04d",
-  "nuvens": "04d",
-  "chuva fraca": "10d",
-  "chuva": "09d",
-  "trovoada": "11d",
-  "neve": "13d",
-  "névoa": "50d"
-};
-
-function iconFromDescricao(desc = "") {
-  desc = desc.toLowerCase();
-  for (const key in CLIMA_ICONS) {
-    if (desc.includes(key)) return CLIMA_ICONS[key];
-  }
-  return "01d";
-}
 
 /* =========================
    UTIL
@@ -49,13 +23,27 @@ function limpar() {
   conteudo.innerHTML = "";
 }
 
-function trocarConteudo(el) {
-  fadeOut();
-  setTimeout(() => {
-    limpar();
-    conteudo.appendChild(el);
-    fadeIn();
-  }, 400);
+/* =========================
+   PRELOAD
+========================= */
+function preloadMidia(midia) {
+  return new Promise(resolve => {
+    if (midia.tipo === "imagem") {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = midia.url;
+    }
+
+    if (midia.tipo === "video") {
+      const video = document.createElement("video");
+      video.preload = "auto";
+      video.oncanplaythrough = () => resolve(video);
+      video.onerror = () => resolve(null);
+      video.src = midia.url;
+      video.load();
+    }
+  });
 }
 
 /* =========================
@@ -67,95 +55,98 @@ async function carregarDados() {
 }
 
 /* =========================
-   MÍDIAS
+   RENDER MÍDIA
 ========================= */
-function renderMidia(item) {
-  const el =
-    item.tipo === "imagem"
-      ? Object.assign(new Image(), { src: item.url, className: "midia-img" })
-      : Object.assign(document.createElement("video"), {
-          src: item.url,
-          autoplay: true,
-          muted: true,
-          className: "midia-video"
-        });
+async function renderMidia(item) {
+  fadeOut();
+  const elemento = await preloadMidia(item);
+  if (!elemento) return tocar();
 
-  el.onerror = () => {
+  setTimeout(() => {
+    limpar();
+
     if (item.tipo === "imagem") {
-      el.src = "/fallback.jpg";
-      el.classList.add("fallback");
-    } else tocar();
-  };
+      elemento.className = "midia-img";
+      elemento.onerror = () => {
+        elemento.src = "/fallback.jpg";
+        elemento.classList.add("fallback");
+      };
+      conteudo.appendChild(elemento);
+      fadeIn();
+      setTimeout(tocar, item.duracao * 1000);
+    }
 
-  if (item.tipo === "video") {
-    el.onended = () => {
-      fadeOut();
-      setTimeout(tocar, 400);
-    };
-  }
-
-  trocarConteudo(el);
-
-  if (item.tipo === "imagem") {
-    setTimeout(tocar, item.duracao * 1000);
-  }
+    if (item.tipo === "video") {
+      elemento.className = "midia-video";
+      elemento.autoplay = true;
+      elemento.muted = true;
+      elemento.onended = tocar;
+      conteudo.appendChild(elemento);
+      fadeIn();
+    }
+  }, 600);
 }
 
 /* =========================
-   NOTÍCIA
+   NOTÍCIA – PADRÃO PORTAL
 ========================= */
-function renderNoticia(n) {
-  const box = document.createElement("div");
-  box.className = "noticia-full";
-  box.innerHTML = `
-    <img class="noticia-imagem" src="${n.imagem || "/fallback.jpg"}"
-      onerror="this.src='/fallback.jpg'" />
-    <div class="noticia-overlay"></div>
-    <div class="noticia-faixa">
-      <h1>${n.titulo}</h1>
-    </div>
-  `;
-  trocarConteudo(box);
-  setTimeout(tocar, 10000);
-}
+function renderNoticia(noticia) {
+  fadeOut();
 
-/* =========================
-   CLIMA
-========================= */
-function renderClima() {
-  if (!climaAtual) return tocar();
+  setTimeout(() => {
+    limpar();
 
-  const iconAtual = iconFromDescricao(climaAtual.descricao);
+    const box = document.createElement("div");
+    box.className = "noticia-full";
 
-  const prev = (climaAtual.previsao || []).map(p => {
-    const icon = iconFromDescricao(p.descricao);
-    return `
-      <div class="clima-dia">
-        <span>${p.dia}</span>
-        <img src="https://openweathermap.org/img/wn/${icon}.png" />
-        <strong>${p.max}°</strong>
-        <small>${p.min}°</small>
+    box.innerHTML = `
+      <div class="noticia-imagem">
+        <img src="${noticia.imagem || '/fallback.jpg'}" />
+      </div>
+      <div class="noticia-faixa">
+        <h1>${noticia.titulo}</h1>
       </div>
     `;
-  }).join("");
 
-  const box = document.createElement("div");
-  box.className = "clima-full";
-  box.innerHTML = `
-    <div class="clima-cidade">${climaAtual.cidade}</div>
-    <img class="clima-icon"
-      src="https://openweathermap.org/img/wn/${iconAtual}@4x.png" />
-    <div class="clima-temp">${climaAtual.temperatura}°</div>
-    <div class="clima-desc">${climaAtual.descricao}</div>
-    <div class="clima-prev">${prev}</div>
-  `;
+    conteudo.appendChild(box);
+    fadeIn();
 
-  trocarConteudo(box);
-  setTimeout(tocar, 9000);
+    setTimeout(tocar, 10000);
+  }, 600);
 }
 
 /* =========================
-   LOOP
+   CLIMA – FULLSCREEN
+========================= */
+async function renderClima() {
+  fadeOut();
+
+  setTimeout(async () => {
+    limpar();
+
+    const box = document.createElement("div");
+    box.className = "clima-full";
+    box.innerHTML = `
+      <div class="clima-cidade">--</div>
+      <div class="clima-temp">--°</div>
+      <div class="clima-desc">Carregando...</div>
+    `;
+    conteudo.appendChild(box);
+    fadeIn();
+
+    try {
+      const c = await fetch(`/api/clima/${tvId}`).then(r => r.json());
+      box.querySelector(".clima-cidade").innerText = c.cidade;
+      box.querySelector(".clima-temp").innerText = `${c.temperatura}°`;
+      box.querySelector(".clima-desc").innerText = c.descricao;
+    } catch {}
+
+    setTimeout(tocar, 8000);
+  }, 600);
+}
+
+/* =========================
+   LOOP PRINCIPAL
 ========================= */
 function tocar() {
   if (!playlist.length) return;
@@ -173,7 +164,6 @@ function tocar() {
   const item = playlist[indice];
   indice = (indice + 1) % playlist.length;
   anunciosRodados++;
-
   renderMidia(item);
 }
 
@@ -183,16 +173,15 @@ function tocar() {
 function atualizarHora() {
   const agora = new Date();
   document.getElementById("dataHora").innerText =
-    agora.toLocaleDateString("pt-BR") +
-    " • " +
+    agora.toLocaleDateString("pt-BR") + " • " +
     agora.toLocaleTimeString("pt-BR");
 }
 
 async function atualizarClimaRodape() {
   try {
-    climaAtual = await fetch(`/api/clima/${tvId}`).then(r => r.json());
+    const c = await fetch(`/api/clima/${tvId}`).then(r => r.json());
     document.getElementById("clima").innerText =
-      `${climaAtual.cidade} • ${climaAtual.temperatura}°C • ${climaAtual.descricao}`;
+      `${c.cidade} • ${c.temperatura}°C • ${c.descricao}`;
   } catch {
     document.getElementById("clima").innerText = "";
   }
