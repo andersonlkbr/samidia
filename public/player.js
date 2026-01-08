@@ -269,32 +269,4 @@ setInterval(atualizarClimaRodape, 60000);
   atualizarHora();
   atualizarClimaRodape();
   tocar();
-
-  /* =========================
-   WATCHDOG ANTI-FREEZE
-========================= */
-
-// tempo máximo sem atividade (ms)
-// recomendado para TV: 45s
-const WATCHDOG_TIMEOUT = 45000;
-
-let ultimoHeartbeat = Date.now();
-
-// sempre que algo renderiza, chamamos isso
-function heartbeat() {
-  ultimoHeartbeat = Date.now();
-}
-
-// verificação periódica
-setInterval(() => {
-  const agora = Date.now();
-  const diff = agora - ultimoHeartbeat;
-
-  if (diff > WATCHDOG_TIMEOUT) {
-    console.warn("WATCHDOG: player travado, recarregando...");
-    location.reload();
-  }
-}, 10000);
-
-
 })();
