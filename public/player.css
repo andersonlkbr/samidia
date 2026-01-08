@@ -1,4 +1,3 @@
-/* RESET */
 * {
   margin: 0;
   padding: 0;
@@ -14,22 +13,21 @@ html, body {
 }
 
 /* =========================
-   ÁREA PRINCIPAL (TV SAFE)
+   ÁREA PRINCIPAL
 ========================= */
 #conteudo {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 42px; /* espaço do rodapé */
+  bottom: 42px;
   background: black;
-  overflow: hidden;
   opacity: 1;
   transition: opacity 0.6s ease-in-out;
 }
 
 /* =========================
-   MÍDIAS (ANÚNCIOS)
+   ANÚNCIOS
 ========================= */
 .midia-img,
 .midia-video {
@@ -44,58 +42,65 @@ html, body {
 }
 
 /* =========================
-   NOTÍCIA – TELA CHEIA
+   NOTÍCIA – TV SAFE
 ========================= */
 .noticia-full {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 42px;
-  display: flex;
-  flex-direction: column;
+  bottom: 0;
   background: black;
 }
 
+/* imagem ocupa 70% */
 .noticia-imagem {
-  flex: 1;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 70%;
 }
 
 .noticia-imagem img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  display: block;
 }
 
-/* faixa vermelha */
+/* faixa vermelha SEMPRE visível */
 .noticia-faixa {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 30%;
   background: #b91c1c;
   color: white;
   padding: 28px 40px;
+  display: flex;
+  align-items: center;
 }
 
 .noticia-faixa h1 {
-  font-size: clamp(26px, 4vw, 48px);
-  font-weight: bold;
+  font-size: clamp(28px, 3.5vw, 52px);
   line-height: 1.2;
+  font-weight: bold;
 }
 
 /* =========================
-   CLIMA – TELA CHEIA (APP)
+   CLIMA – TELA CHEIA REAL
 ========================= */
 .clima-full {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
   right: 0;
-  bottom: 42px;
+  bottom: 0;
   background: linear-gradient(180deg, #0a2a5e, #0d47a1);
   color: white;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  text-align: center;
+  padding-top: 120px;
 }
 
 .clima-cidade {
@@ -104,12 +109,12 @@ html, body {
 }
 
 .clima-temp {
-  font-size: 96px;
+  font-size: 110px;
   font-weight: bold;
 }
 
 .clima-desc {
-  font-size: 28px;
+  font-size: 30px;
   margin-top: 10px;
 }
 
@@ -117,7 +122,7 @@ html, body {
    RODAPÉ
 ========================= */
 #rodape {
-  position: fixed;
+  position: absolute;
   bottom: 0;
   left: 0;
   right: 0;
@@ -129,5 +134,5 @@ html, body {
   padding: 0 20px;
   align-items: center;
   font-size: 14px;
-  z-index: 100;
+  z-index: 10;
 }

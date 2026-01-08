@@ -101,7 +101,7 @@ function renderNoticia(noticia) {
 
     box.innerHTML = `
       <div class="noticia-imagem">
-        <img src="${noticia.imagem || '/fallback.jpg'}" />
+        <img src="${noticia.imagem || '/img/fallback.jpg'}" />
       </div>
       <div class="noticia-faixa">
         <h1>${noticia.titulo}</h1>
