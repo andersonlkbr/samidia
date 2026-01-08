@@ -82,6 +82,7 @@ async function renderMidia(item) {
       elemento.muted = true;
       elemento.onended = tocar;
       conteudo.appendChild(elemento);
+      heartbeat();
       fadeIn();
     }
   }, 600);
@@ -109,50 +110,78 @@ function renderNoticia(noticia) {
     `;
 
     conteudo.appendChild(box);
+    heartbeat();
     fadeIn();
 
     setTimeout(tocar, 10000);
   }, 600);
 }
 
+function getIconClima(condicao) {
+  condicao = condicao.toLowerCase();
+
+  if (condicao.includes("clear")) return "/icones/sol.png";
+  if (condicao.includes("cloud")) return "/icones/nublado.png";
+  if (condicao.includes("rain") || condicao.includes("drizzle")) return "/icones/chuva.png";
+  if (condicao.includes("thunder")) return "/icones/tempestade.png";
+  if (condicao.includes("snow")) return "/icones/neve.png";
+  if (condicao.includes("mist") || condicao.includes("fog")) return "/icones/neblina.png";
+
+  return "/icones/nublado.png";
+}
+
 /* =========================
-   CLIMA – FULLSCREEN
+   CLIMA – FULLSCREEN TV
 ========================= */
-function renderClima() {
+async function renderClima() {
   fadeOut();
 
-  setTimeout(() => {
+  setTimeout(async () => {
     limpar();
+
+    let dados;
+    try {
+      const res = await fetch(`/api/clima/${tvId}`);
+      dados = await res.json();
+    } catch {
+      return tocar(); // falha segura
+    }
+
+    const iconAtual = getIconClima(dados.condicao || dados.descricao);
 
     const box = document.createElement("div");
     box.className = "clima-full";
 
     box.innerHTML = `
       <div class="clima-topo">
-        <div class="clima-cidade">--</div>
+        <div class="clima-cidade">${dados.cidade}</div>
       </div>
 
-      <div class="clima-atual">
-        <img class="clima-icone" src="" alt="">
-        <div class="clima-temp">--°</div>
-        <div class="clima-desc"></div>
+      <div class="clima-principal">
+        <img class="clima-icon" src="${iconAtual}" />
+        <div class="clima-temp">${dados.temperatura}°</div>
+        <div class="clima-desc">${dados.descricao}</div>
       </div>
 
-      <div class="clima-prev">
-        <div class="clima-dia"></div>
-        <div class="clima-dia"></div>
-        <div class="clima-dia"></div>
+      <div class="clima-previsao">
+        ${dados.previsao.slice(0,3).map(d => `
+          <div class="clima-dia">
+            <div class="clima-dia-nome">${d.dia}</div>
+            <img src="${getIconClima(d.condicao)}" />
+            <div class="clima-max">${d.max}°</div>
+            <div class="clima-min">${d.min}°</div>
+          </div>
+        `).join("")}
       </div>
     `;
 
     conteudo.appendChild(box);
     fadeIn();
 
-    atualizarClimaTela();
-
     setTimeout(tocar, 9000);
   }, 500);
 }
+
 
 async function atualizarClimaTela() {
   try {
@@ -193,6 +222,7 @@ async function atualizarClimaTela() {
    LOOP PRINCIPAL
 ========================= */
 function tocar() {
+  heartbeat();
   if (!playlist.length) return;
 
   if (anunciosRodados === 2 && noticias.length) {
@@ -242,4 +272,32 @@ setInterval(atualizarClimaRodape, 60000);
   atualizarHora();
   atualizarClimaRodape();
   tocar();
+
+  /* =========================
+   WATCHDOG ANTI-FREEZE
+========================= */
+
+// tempo máximo sem atividade (ms)
+// recomendado para TV: 45s
+const WATCHDOG_TIMEOUT = 45000;
+
+let ultimoHeartbeat = Date.now();
+
+// sempre que algo renderiza, chamamos isso
+function heartbeat() {
+  ultimoHeartbeat = Date.now();
+}
+
+// verificação periódica
+setInterval(() => {
+  const agora = Date.now();
+  const diff = agora - ultimoHeartbeat;
+
+  if (diff > WATCHDOG_TIMEOUT) {
+    console.warn("WATCHDOG: player travado, recarregando...");
+    location.reload();
+  }
+}, 10000);
+
+
 })();
