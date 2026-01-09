@@ -94,7 +94,7 @@ router.put("/:id", (req, res) => {
 });
 
 /* =========================
-   EXCLUIR MÍDIA (BLINDADO)
+   EXCLUIR MÍDIA
 ========================= */
 router.delete("/:id", (req, res) => {
   const { id } = req.params;
@@ -102,7 +102,7 @@ router.delete("/:id", (req, res) => {
   db.get(
     `SELECT url FROM midias WHERE id = ?`,
     [id],
-    (err, row) => {
+    async (err, row) => { // <--- Adicione ASYNC aqui
       if (err) {
         console.error(err);
         return res.status(500).json({ erro: "Erro buscar mídia" });
@@ -110,23 +110,24 @@ router.delete("/:id", (req, res) => {
 
       const url = row?.url;
 
-      // PRIMEIRO remove do banco (NUNCA trava)
+      // Se tiver URL, deleta do R2 PRIMEIRO (ou aguarda a promessa)
+      if (url) {
+        try {
+            await deleteFromR2(url); // <--- Adicione AWAIT aqui
+        } catch (r2Error) {
+            console.error("Falha ao deletar do R2, mas seguirei deletando do banco", r2Error);
+        }
+      }
+
+      // DEPOIS remove do banco
       db.run(
         `DELETE FROM midias WHERE id = ?`,
         [id],
         err2 => {
           if (err2) {
             console.error(err2);
-            return res
-              .status(500)
-              .json({ erro: "Erro ao excluir mídia" });
+            return res.status(500).json({ erro: "Erro ao excluir mídia do banco" });
           }
-
-          // Depois tenta remover do R2 (background)
-          if (url) {
-            deleteFromR2(url);
-          }
-
           res.json({ sucesso: true });
         }
       );

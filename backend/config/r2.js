@@ -1,12 +1,24 @@
-const { S3Client } = require("@aws-sdk/client-s3");
+/* =========================
+   DELETE (CORRIGIDO)
+========================= */
+async function deleteFromR2(url) {
+  try {
+    if (!url) return;
 
-const r2 = new S3Client({
-  region: "auto",
-  endpoint: process.env.R2_ENDPOINT,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY,
-    secretAccessKey: process.env.R2_SECRET_KEY,
-  },
-});
+    // CORREÇÃO: decodeURIComponent resolve problemas de espaços (%20) e acentos
+    const pathName = new URL(url).pathname;
+    const key = decodeURIComponent(pathName.replace(/^\/+/, "")); 
 
-module.exports = r2;
+    console.log("Tentando deletar Key:", key); // Log para debug
+
+    await r2.send(
+      new DeleteObjectCommand({
+        Bucket: BUCKET,
+        Key: key,
+      })
+    );
+    console.log("Deletado com sucesso do R2");
+  } catch (err) {
+    console.error("Erro ao excluir do R2:", err);
+  }
+}

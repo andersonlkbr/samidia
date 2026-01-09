@@ -184,7 +184,26 @@ async function toggleMidia(id, ativo) {
 
 async function excluirMidia(id) {
   if (!confirm('Excluir mídia?')) return;
-  await fetch(`/api/midia/${id}`, { method: 'DELETE' });
+
+  // 1. Acha o botão para mudar o texto (Visual)
+  const btn = document.querySelector(`button[onclick="excluirMidia('${id}')"]`);
+  const textoOriginal = btn.innerText;
+  btn.innerText = "Excluindo...";
+  btn.disabled = true; // Evita clique duplo
+
+  try {
+    const res = await fetch(`/api/midia/${id}`, { method: 'DELETE' });
+    
+    // Se der erro no servidor (ex: R2 fora do ar), avisa o usuário
+    if (!res.ok) {
+        alert("Erro ao excluir. Verifique o console.");
+        console.error(await res.json());
+    }
+  } catch (error) {
+    alert("Erro de conexão.");
+  }
+
+  // 2. Recarrega a lista
   await carregarMidias();
 }
 
