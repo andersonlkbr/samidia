@@ -206,6 +206,5 @@ function tocar() {
 ========================= */
 (async () => {
   await carregarDados();
-  atualizarClimaRodape();
   tocar();
 })();
