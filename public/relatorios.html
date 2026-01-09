@@ -2,74 +2,90 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>Relatórios — SAmídia</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAmídia • Relatórios</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      padding: 20px;
-    }
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
 
-    h1, h2 {
-      margin-bottom: 10px;
-    }
-
-    .box {
-      background: #1c1c1c;
-      padding: 15px;
-      margin-bottom: 20px;
-      border-radius: 6px;
-    }
-
-    button, select {
-      padding: 6px;
-      margin: 5px 0;
-    }
-
-    .linha {
-      padding: 8px;
-      border-bottom: 1px solid #333;
-    }
-
-    .small {
-      font-size: 13px;
-      opacity: 0.8;
-      word-break: break-all;
-    }
-
-    a {
-      color: #8fd3ff;
-      text-decoration: none;
-    }
-  </style>
+  <link rel="stylesheet" href="relatorios.css">
 </head>
 <body>
 
-<div class="box">
-  <a href="/admin.html">⬅ Voltar ao Admin</a>
-</div>
+  <header class="top-bar">
+    <div class="header-left">
+      <a href="/admin.html" class="btn-back">
+        <i class="ph ph-arrow-left"></i> Voltar
+      </a>
+      <h1><i class="ph ph-chart-bar"></i> Relatórios de Performance</h1>
+    </div>
+    
+    <div class="header-right">
+      <div class="user-info">
+        <span>Admin</span>
+        <div class="avatar">A</div>
+      </div>
+    </div>
+  </header>
 
-<h1>📊 Relatórios</h1>
+  <main class="content">
 
-<div class="box">
-  <h2>Selecionar TV</h2>
-  <select id="tvSelect"></select>
-</div>
+    <section class="filters">
+      <div class="input-group">
+        <label>Selecione a TV</label>
+        <div class="select-wrapper">
+          <i class="ph ph-television"></i>
+          <select id="tvSelect">
+            <option value="">Carregando TVs...</option>
+          </select>
+          <i class="ph ph-caret-down arrow"></i>
+        </div>
+      </div>
+      
+      <button onclick="carregarDadosGerais()" class="btn-refresh">
+        <i class="ph ph-arrows-clockwise"></i> Atualizar
+      </button>
+    </section>
 
-<div class="box">
-  <h2>Resumo por tipo</h2>
-  <button onclick="carregarResumo()">Atualizar</button>
-  <div id="resumo"></div>
-</div>
+    <section class="kpi-grid" id="resumo">
+      <div class="card kpi empty">
+        <p>Selecione uma TV para ver o resumo.</p>
+      </div>
+    </section>
 
-<div class="box">
-  <h2>Detalhe por mídia</h2>
-  <button onclick="carregarMidias()">Atualizar</button>
-  <div id="relatorioMidias"></div>
-</div>
+    <section class="details-section">
+      <div class="section-header">
+        <h2>Detalhamento por Mídia</h2>
+        <p>Performance individual de cada arquivo reproduzido.</p>
+      </div>
 
-<script src="/relatorios.js"></script>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th width="50">Tipo</th>
+              <th>Arquivo / URL</th>
+              <th width="120" class="text-center">Exibições</th>
+              <th width="150" class="text-right">Tempo Total</th>
+            </tr>
+          </thead>
+          <tbody id="relatorioMidias">
+            <tr>
+              <td colspan="4" class="empty-row">
+                <i class="ph ph-chart-line-up"></i>
+                Selecione uma TV acima para carregar os dados.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+<script src="relatorios.js"></script>
 </body>
 </html>
