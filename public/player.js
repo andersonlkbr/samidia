@@ -9,7 +9,7 @@ let indice = 0;
 let anunciosRodados = 0;
 
 let watchdogTimer = null;
-let emExecucao = false; // 🔒 trava de segurança
+let emExecucao = false;
 
 /* =========================
    UTIL
@@ -36,6 +36,7 @@ function clearWatchdog() {
 function armWatchdog(ms) {
   clearWatchdog();
   watchdogTimer = setTimeout(() => {
+    console.warn("⏱️ Watchdog acionado");
     avancar();
   }, ms);
 }
@@ -46,8 +47,13 @@ function armWatchdog(ms) {
 function avancar() {
   if (emExecucao) return;
   emExecucao = true;
+
+  clearWatchdog();
   tocar();
-  setTimeout(() => (emExecucao = false), 300);
+
+  setTimeout(() => {
+    emExecucao = false;
+  }, 500);
 }
 
 /* =========================
@@ -86,6 +92,7 @@ function preloadMidia(midia) {
       video.src = midia.url;
       video.muted = true;
       video.playsInline = true;
+
       video.onloadedmetadata = () => resolve(video);
       video.onerror = () => resolve(null);
     }
@@ -126,6 +133,7 @@ async function renderMidia(item) {
       el.className = "midia-img";
       conteudo.appendChild(el);
       fadeIn();
+
       armWatchdog((item.duracao || 8) * 1000);
     }
 
@@ -141,7 +149,11 @@ async function renderMidia(item) {
       conteudo.appendChild(el);
       fadeIn();
 
-      // segurança máxima
+      el.play().catch(() => {
+        console.warn("▶️ Play bloqueado, avançando");
+        avancar();
+      });
+
       armWatchdog((item.duracao || 15) * 1000);
     }
   }, 400);
@@ -201,11 +213,11 @@ async function renderClima() {
 
     conteudo.innerHTML = `
       <div class="clima-full">
-        <div class="clima-cidade">${c.cidade}</div>
+        <div class="clima-cidade">${c.cidade || ""}</div>
         <div class="clima-principal">
           <div class="clima-icon">${getIconClima(c.descricao)}</div>
-          <div class="clima-temp">${c.temperatura}°</div>
-          <div class="clima-desc">${c.descricao}</div>
+          <div class="clima-temp">${c.temperatura ?? "--"}°</div>
+          <div class="clima-desc">${c.descricao || ""}</div>
         </div>
       </div>
     `;
@@ -216,7 +228,7 @@ async function renderClima() {
 }
 
 /* =========================
-   LOOP
+   LOOP PRINCIPAL
 ========================= */
 function tocar() {
   clearWatchdog();
@@ -254,5 +266,6 @@ setInterval(() => {
 ========================= */
 (async () => {
   await carregarDados();
+  atualizarClimaRodape();
   tocar();
 })();
