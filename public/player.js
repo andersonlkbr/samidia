@@ -230,17 +230,30 @@ async function tocar() {
 }
 
 /* =========================
-   RODAPÉ
+   RODAPÉ (Hora Formatada)
 ========================= */
 function atualizarHora() {
   const el = document.getElementById("dataHora");
   if (!el) return;
+
   const d = new Date();
-  // Formato HH:MM mais limpo
-  const hora = d.toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' });
+
+  // 1. Pega o dia da semana (ex: "sexta-feira")
+  let diaSemana = d.toLocaleDateString("pt-BR", { weekday: "long" });
+  
+  // 2. Transforma a primeira letra em Maiúscula (ex: "Sexta-feira")
+  diaSemana = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1);
+
+  // 3. Pega a data numérica (ex: "09/01/2026")
   const data = d.toLocaleDateString("pt-BR");
-  el.innerHTML = `<b>${hora}</b> <span style="opacity:0.6; margin-left:10px">${data}</span>`;
+
+  // 4. Pega a hora (ex: "09:52")
+  const hora = d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+
+  // Monta o texto final
+  el.innerText = `${diaSemana} - ${data} - ${hora}`;
 }
+
 setInterval(atualizarHora, 1000);
 
 async function atualizarClimaRodape() {

@@ -176,4 +176,5 @@ html, body {
   align-items: center;
   font-size: 14px;
   border-top: 2px solid #d32f2f; /* Detalhe vermelho */
+  font-weight: 500; /* Deixa um pouco mais nítido */
 }
