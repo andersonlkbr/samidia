@@ -94,40 +94,43 @@ router.put("/:id", (req, res) => {
 });
 
 /* =========================
-   EXCLUIR MÍDIA
+   EXCLUIR MÍDIA (GARANTIDO)
 ========================= */
 router.delete("/:id", (req, res) => {
   const { id } = req.params;
 
+  // 1. Primeiro buscamos a URL para tentar apagar do R2
   db.get(
     `SELECT url FROM midias WHERE id = ?`,
     [id],
-    async (err, row) => { // <--- Adicione ASYNC aqui
+    async (err, row) => {
       if (err) {
         console.error(err);
-        return res.status(500).json({ erro: "Erro buscar mídia" });
+        return res.status(500).json({ erro: "Erro ao buscar mídia" });
       }
 
       const url = row?.url;
 
-      // Se tiver URL, deleta do R2 PRIMEIRO (ou aguarda a promessa)
+      // 2. Tenta apagar do R2 (Se falhar, o código NÃO para mais)
       if (url) {
         try {
-            await deleteFromR2(url); // <--- Adicione AWAIT aqui
+            await deleteFromR2(url); 
         } catch (r2Error) {
-            console.error("Falha ao deletar do R2, mas seguirei deletando do banco", r2Error);
+            console.error("Erro no R2 ignorado para permitir exclusão do banco:", r2Error);
         }
       }
 
-      // DEPOIS remove do banco
+      // 3. AGORA APAGA DO BANCO DE DADOS (Isso remove da lista do Admin)
       db.run(
         `DELETE FROM midias WHERE id = ?`,
         [id],
         err2 => {
           if (err2) {
             console.error(err2);
-            return res.status(500).json({ erro: "Erro ao excluir mídia do banco" });
+            return res.status(500).json({ erro: "Erro ao excluir do banco" });
           }
+          
+          console.log(`Mídia ${id} removida do banco com sucesso.`);
           res.json({ sucesso: true });
         }
       );
