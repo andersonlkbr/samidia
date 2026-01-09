@@ -14,13 +14,9 @@ const upload = multer({ storage: multer.memoryStorage() });
 router.get("/:tvId", (req, res) => {
   const { tvId } = req.params;
 
+  // IMPORTANTE: Adicionei "ORDER BY ordem ASC" para respeitar a ordenação
   db.all(
-    `
-    SELECT *
-    FROM midias
-    WHERE tv_id = ?
-    ORDER BY ordem ASC
-    `,
+    `SELECT * FROM midias WHERE tv_id = ? ORDER BY ordem ASC`,
     [tvId],
     (err, rows) => {
       if (err) {
@@ -33,7 +29,7 @@ router.get("/:tvId", (req, res) => {
 });
 
 /* =========================
-   UPLOAD DE MÍDIA (CORRIGIDO)
+   UPLOAD DE MÍDIA
 ========================= */
 router.post("/:tvId", upload.single("arquivo"), async (req, res) => {
   try {
@@ -42,8 +38,7 @@ router.post("/:tvId", upload.single("arquivo"), async (req, res) => {
 
     if (!req.file) return res.status(400).json({ erro: "Arquivo não enviado" });
 
-    const id = uuidv4(); // <--- 1. GERA O ID ÚNICO
-
+    const id = uuidv4();
     const tipo = req.file.mimetype.startsWith("video") ? "video" : "imagem";
 
     const url = await uploadToR2(
@@ -52,15 +47,18 @@ router.post("/:tvId", upload.single("arquivo"), async (req, res) => {
       req.file.mimetype
     );
 
-    // 2. ADICIONEI O 'id' NO INSERT ABAIXO:
+    // Definimos uma ordem padrão alta para ir pro final da fila, ou 0
+    const ordem = Date.now(); 
+
     db.run(
       `
-      INSERT INTO midias (id, tv_id, tipo, url, duracao, regiao, ativo)
-      VALUES (?, ?, ?, ?, ?, ?, 1)
+      INSERT INTO midias (id, tv_id, tipo, url, duracao, regiao, ativo, ordem)
+      VALUES (?, ?, ?, ?, ?, ?, 1, ?)
       `,
-      [id, tvId, tipo, url, duracao || 10, regiao || "Todas"], // <--- Passei o ID aqui
+      [id, tvId, tipo, url, duracao || 10, regiao || "Todas", ordem],
       err => {
         if (err) {
+          // Se der erro de coluna 'ordem' não existente, o usuário precisa criar a coluna
           console.error("Erro salvar mídia:", err);
           return res.status(500).json({ erro: "Erro ao salvar mídia" });
         }
@@ -84,53 +82,29 @@ router.put("/:id", (req, res) => {
     `UPDATE midias SET ativo = ? WHERE id = ?`,
     [ativo ? 1 : 0, id],
     err => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ erro: "Erro ao atualizar mídia" });
-      }
+      if (err) return res.status(500).json({ erro: "Erro ao atualizar" });
       res.json({ sucesso: true });
     }
   );
 });
 
 /* =========================
-   EXCLUIR MÍDIA (GARANTIDO)
+   EXCLUIR MÍDIA
 ========================= */
 router.delete("/:id", (req, res) => {
   const { id } = req.params;
 
-  // 1. Primeiro buscamos a URL para tentar apagar do R2
-  db.get(
-    `SELECT url FROM midias WHERE id = ?`,
-    [id],
-    async (err, row) => {
-      if (err) {
-        console.error(err);
-        return res.status(500).json({ erro: "Erro ao buscar mídia" });
-      }
+  db.get(`SELECT url FROM midias WHERE id = ?`, [id], async (err, row) => {
+      if (err) return res.status(500).json({ erro: "Erro buscar mídia" });
 
       const url = row?.url;
-
-      // 2. Tenta apagar do R2 (Se falhar, o código NÃO para mais)
       if (url) {
-        try {
-            await deleteFromR2(url); 
-        } catch (r2Error) {
-            console.error("Erro no R2 ignorado para permitir exclusão do banco:", r2Error);
-        }
+        try { await deleteFromR2(url); } 
+        catch (r2Error) { console.error("Erro R2 ignorado:", r2Error); }
       }
 
-      // 3. AGORA APAGA DO BANCO DE DADOS (Isso remove da lista do Admin)
-      db.run(
-        `DELETE FROM midias WHERE id = ?`,
-        [id],
-        err2 => {
-          if (err2) {
-            console.error(err2);
-            return res.status(500).json({ erro: "Erro ao excluir do banco" });
-          }
-          
-          console.log(`Mídia ${id} removida do banco com sucesso.`);
+      db.run(`DELETE FROM midias WHERE id = ?`, [id], err2 => {
+          if (err2) return res.status(500).json({ erro: "Erro ao excluir" });
           res.json({ sucesso: true });
         }
       );
@@ -138,12 +112,32 @@ router.delete("/:id", (req, res) => {
   );
 });
 
-// Rota de limpeza de emergência
-router.get("/limpar/fantasmas", (req, res) => {
-    db.run("DELETE FROM midias WHERE id IS NULL", [], (err) => {
-        if (err) return res.send("Erro: " + err.message);
-        res.send("Limpeza concluída! Mídias sem ID foram apagadas.");
-    });
+/* =========================
+   ORDENAR MÍDIAS (NOVO!)
+========================= */
+router.put("/ordenar", (req, res) => {
+  const { ids } = req.body; // Array de IDs na nova ordem
+
+  if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ erro: "Dados inválidos" });
+  }
+
+  // Usa transação para atualizar a ordem de todos
+  db.serialize(() => {
+      const stmt = db.prepare("UPDATE midias SET ordem = ? WHERE id = ?");
+      
+      ids.forEach((id, index) => {
+          stmt.run(index, id); // Index 0 = ordem 0, Index 1 = ordem 1...
+      });
+
+      stmt.finalize((err) => {
+          if (err) {
+              console.error("Erro ao ordenar:", err);
+              return res.status(500).json({ erro: "Erro ao salvar ordem" });
+          }
+          res.json({ sucesso: true });
+      });
+  });
 });
 
 module.exports = router;

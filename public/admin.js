@@ -23,11 +23,8 @@ async function carregarTVs() {
 
   tvs.forEach(tv => {
     const online = tv.ultimo_ping && agora - tv.ultimo_ping < 60000;
-
     const card = document.createElement('div');
     card.className = 'card tv';
-
-    // Ícone de status (bola verde/vermelha)
     const statusColor = online ? 'var(--success)' : 'var(--danger)';
     const statusText = online ? 'ONLINE' : 'OFFLINE';
 
@@ -44,9 +41,7 @@ async function carregarTVs() {
         <i class="ph ph-arrow-square-out"></i> Abrir Player
       </a>
     `;
-
     tvCards.appendChild(card);
-
     const opt = document.createElement('option');
     opt.value = tv.id;
     opt.textContent = tv.nome;
@@ -64,27 +59,17 @@ selectTVMidia.onchange = async () => {
 ========================== */
 async function carregarMidias() {
   if (!tvAtual) {
-      listaMidias.innerHTML = `
-        <div class="empty-state">
-          <i class="ph ph-selection-plus"></i>
-          <p>Selecione uma TV acima para gerenciar o conteúdo.</p>
-        </div>`;
+      listaMidias.innerHTML = `<div class="empty-state"><i class="ph ph-selection-plus"></i><p>Selecione uma TV acima.</p></div>`;
       return;
   }
 
   const res = await fetch(`/api/midia/${tvAtual}`);
   const data = await res.json();
-
   midiasAtuais = Array.isArray(data) ? data : data.midias || [];
-
   listaMidias.innerHTML = '';
 
   if (midiasAtuais.length === 0) {
-      listaMidias.innerHTML = `
-        <div class="empty-state">
-          <i class="ph ph-image-broken"></i>
-          <p>Nenhuma mídia cadastrada nesta TV.</p>
-        </div>`;
+      listaMidias.innerHTML = `<div class="empty-state"><i class="ph ph-image-broken"></i><p>Nenhuma mídia cadastrada.</p></div>`;
       return;
   }
 
@@ -94,60 +79,52 @@ async function carregarMidias() {
     card.draggable = true;
     card.dataset.id = m.id;
 
-    const thumb = document.createElement('div');
-    thumb.className = 'thumb';
-    
-    // Preview visual
-    if (m.tipo === 'imagem') {
-        thumb.innerHTML = `<img src="${m.url}" onerror="this.src='/img/fallback.jpg'"/>`;
-    } else {
-        thumb.innerHTML = `<i class="ph ph-film-strip thumb-icon"></i>`;
-    }
+    // Ícone de Arrastar (Drag Handle)
+    const dragHandle = `<div class="drag-handle" title="Arraste para ordenar"><i class="ph-fill ph-dots-six-vertical"></i></div>`;
 
-    const info = document.createElement('div');
-    info.className = 'media-info';
-    
+    const thumbContent = m.tipo === 'imagem' 
+        ? `<img src="${m.url}" onerror="this.src='/img/fallback.jpg'"/>` 
+        : `<i class="ph ph-film-strip thumb-icon"></i>`;
+
     const iconTipo = m.tipo === 'imagem' ? 'ph-image' : 'ph-film-strip';
 
-    info.innerHTML = `
-      <strong><i class="ph ${iconTipo}"></i> ${m.tipo.toUpperCase()}</strong>
-      <div class="badges">
-        <span class="badge"><i class="ph ph-clock"></i> ${m.duracao}s</span>
-        <span class="badge"><i class="ph ph-map-pin"></i> ${m.regiao || 'Todas'}</span>
-        <span class="badge ${m.ativo ? 'active' : 'inactive'}">
-          ${m.ativo ? 'Ativo' : 'Inativo'}
-        </span>
+    // Monta o Card
+    card.innerHTML = `
+      ${dragHandle}
+      
+      <div class="thumb">
+         ${thumbContent}
+      </div>
+
+      <div class="media-info">
+        <strong><i class="ph ${iconTipo}"></i> ${m.tipo.toUpperCase()}</strong>
+        <div class="badges">
+          <span class="badge"><i class="ph ph-clock"></i> ${m.duracao}s</span>
+          <span class="badge"><i class="ph ph-map-pin"></i> ${m.regiao || 'Todas'}</span>
+          <span class="badge ${m.ativo ? 'active' : 'inactive'}">
+            ${m.ativo ? 'Ativo' : 'Inativo'}
+          </span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button onclick="toggleMidia('${m.id}', ${m.ativo})">
+          <i class="ph ${m.ativo ? 'ph-eye-slash' : 'ph-eye'}"></i>
+          ${m.ativo ? 'Ocultar' : 'Exibir'}
+        </button>
+        <button onclick="excluirMidia('${m.id}')" class="btn-delete">
+          <i class="ph ph-trash"></i> Excluir
+        </button>
       </div>
     `;
-
-    const actions = document.createElement('div');
-    actions.className = 'actions';
-    
-    // Botões com ícones
-    actions.innerHTML = `
-      <button onclick="toggleMidia('${m.id}', ${m.ativo})">
-        <i class="ph ${m.ativo ? 'ph-eye-slash' : 'ph-eye'}"></i>
-        ${m.ativo ? 'Ocultar' : 'Exibir'}
-      </button>
-      <button onclick="excluirMidia('${m.id}')" class="btn-delete">
-        <i class="ph ph-trash"></i> Excluir
-      </button>
-    `;
-
-    card.appendChild(thumb);
-    card.appendChild(info);
-    card.appendChild(actions);
 
     adicionarDragEventos(card);
     listaMidias.appendChild(card);
   });
 }
 
-// ... (O RESTANTE DAS FUNÇÕES DE DRAG, EXCLUIR E UPLOAD CONTINUA IGUAL) ...
-// ... Apenas copie e cole o resto do seu admin.js antigo aqui para baixo ...
-
 /* ==========================
-   DRAG LOGIC (Mantenha igual)
+   DRAG LOGIC
 ========================== */
 let dragEl = null;
 
@@ -170,7 +147,11 @@ function adicionarDragEventos(el) {
 
 async function salvarOrdem() {
   const ids = [...listaMidias.children].map(el => el.dataset.id);
-  await fetch('/api/midia/ordenar', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids }) });
+  await fetch('/api/midia/ordenar', { 
+      method: 'PUT', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ ids }) 
+  });
 }
 
 async function toggleMidia(id, ativo) {
@@ -181,7 +162,7 @@ async function toggleMidia(id, ativo) {
 async function excluirMidia(id) {
   if (!confirm('Excluir mídia?')) return;
   const btn = document.querySelector(`button[onclick="excluirMidia('${id}')"]`);
-  if(btn) { btn.innerHTML = '<i class="ph ph-spinner-gap"></i> ...'; btn.disabled = true; } // Ícone de loading
+  if(btn) { btn.innerHTML = '<i class="ph ph-spinner-gap"></i>'; btn.disabled = true; }
   
   try {
     const res = await fetch(`/api/midia/${id}`, { method: 'DELETE' });
@@ -192,12 +173,9 @@ async function excluirMidia(id) {
 
 async function enviarMidia() {
   if (!tvAtual || !arquivoInput.files.length) return;
-  
-  // Feedback Visual no botão enviar
-  const btnEnviar = document.querySelector('.btn-primary');
-  const textoOriginal = btnEnviar.innerHTML;
-  btnEnviar.innerHTML = '<i class="ph ph-spinner-gap"></i> Enviando...';
-  btnEnviar.disabled = true;
+  const btn = document.querySelector('.btn-primary');
+  const txt = btn.innerHTML;
+  btn.innerHTML = '<i class="ph ph-spinner-gap"></i> Enviando...'; btn.disabled = true;
 
   const form = new FormData();
   form.append('arquivo', arquivoInput.files[0]);
@@ -208,11 +186,7 @@ async function enviarMidia() {
 
   arquivoInput.value = '';
   await carregarMidias();
-  
-  // Restaura botão
-  btnEnviar.innerHTML = textoOriginal;
-  btnEnviar.disabled = false;
+  btn.innerHTML = txt; btn.disabled = false;
 }
 
-// Init
 carregarTVs();
