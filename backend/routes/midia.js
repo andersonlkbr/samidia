@@ -1,5 +1,6 @@
 const express = require("express");
 const multer = require("multer");
+const { v4: uuidv4 } = require('uuid');
 const router = express.Router();
 
 const db = require("../database");
@@ -32,20 +33,18 @@ router.get("/:tvId", (req, res) => {
 });
 
 /* =========================
-   UPLOAD DE MÍDIA
+   UPLOAD DE MÍDIA (CORRIGIDO)
 ========================= */
 router.post("/:tvId", upload.single("arquivo"), async (req, res) => {
   try {
     const { tvId } = req.params;
     const { duracao, regiao } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({ erro: "Arquivo não enviado" });
-    }
+    if (!req.file) return res.status(400).json({ erro: "Arquivo não enviado" });
 
-    const tipo = req.file.mimetype.startsWith("video")
-      ? "video"
-      : "imagem";
+    const id = uuidv4(); // <--- 1. GERA O ID ÚNICO
+
+    const tipo = req.file.mimetype.startsWith("video") ? "video" : "imagem";
 
     const url = await uploadToR2(
       req.file.buffer,
@@ -53,12 +52,13 @@ router.post("/:tvId", upload.single("arquivo"), async (req, res) => {
       req.file.mimetype
     );
 
+    // 2. ADICIONEI O 'id' NO INSERT ABAIXO:
     db.run(
       `
-      INSERT INTO midias (tv_id, tipo, url, duracao, regiao, ativo)
-      VALUES (?, ?, ?, ?, ?, 1)
+      INSERT INTO midias (id, tv_id, tipo, url, duracao, regiao, ativo)
+      VALUES (?, ?, ?, ?, ?, ?, 1)
       `,
-      [tvId, tipo, url, duracao || 10, regiao || "Todas"],
+      [id, tvId, tipo, url, duracao || 10, regiao || "Todas"], // <--- Passei o ID aqui
       err => {
         if (err) {
           console.error("Erro salvar mídia:", err);
@@ -136,6 +136,14 @@ router.delete("/:id", (req, res) => {
       );
     }
   );
+});
+
+// Rota de limpeza de emergência
+router.get("/limpar/fantasmas", (req, res) => {
+    db.run("DELETE FROM midias WHERE id IS NULL", [], (err) => {
+        if (err) return res.send("Erro: " + err.message);
+        res.send("Limpeza concluída! Mídias sem ID foram apagadas.");
+    });
 });
 
 module.exports = router;
