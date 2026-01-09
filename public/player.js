@@ -7,9 +7,7 @@ let playlist = [];
 let noticias = [];
 let indice = 0;
 let anunciosRodados = 0;
-
 let watchdogTimer = null;
-let emExecucao = false;
 
 /* =========================
    UTIL
@@ -36,63 +34,29 @@ function clearWatchdog() {
 function armWatchdog(ms) {
   clearWatchdog();
   watchdogTimer = setTimeout(() => {
-    console.warn("⏱️ Watchdog acionado");
-    avancar();
+    console.warn("Watchdog: avançando");
+    tocar();
   }, ms);
-}
-
-/* =========================
-   AVANÇO CENTRALIZADO
-========================= */
-function avancar() {
-  if (emExecucao) return;
-  emExecucao = true;
-
-  clearWatchdog();
-  tocar();
-
-  setTimeout(() => {
-    emExecucao = false;
-  }, 500);
-}
-
-/* =========================
-   VALIDAÇÃO
-========================= */
-function itemValido(item) {
-  return item && item.tipo && item.url;
-}
-
-function getProximoItemValido() {
-  let tentativas = 0;
-  while (tentativas < playlist.length) {
-    const item = playlist[indice];
-    indice = (indice + 1) % playlist.length;
-    tentativas++;
-    if (itemValido(item)) return item;
-  }
-  return null;
 }
 
 /* =========================
    PRELOAD
 ========================= */
-function preloadMidia(midia) {
+function preloadMidia(item) {
   return new Promise(resolve => {
-    if (midia.tipo === "imagem") {
+    if (item.tipo === "imagem") {
       const img = new Image();
       img.onload = () => resolve(img);
       img.onerror = () => resolve(null);
-      img.src = midia.url;
+      img.src = item.url;
     }
 
-    if (midia.tipo === "video") {
+    if (item.tipo === "video") {
       const video = document.createElement("video");
       video.preload = "metadata";
-      video.src = midia.url;
+      video.src = item.url;
       video.muted = true;
       video.playsInline = true;
-
       video.onloadedmetadata = () => resolve(video);
       video.onerror = () => resolve(null);
     }
@@ -124,7 +88,7 @@ async function renderMidia(item) {
   clearWatchdog();
 
   const el = await preloadMidia(item);
-  if (!el) return avancar();
+  if (!el) return tocar();
 
   setTimeout(() => {
     limpar();
@@ -133,27 +97,16 @@ async function renderMidia(item) {
       el.className = "midia-img";
       conteudo.appendChild(el);
       fadeIn();
-
       armWatchdog((item.duracao || 8) * 1000);
     }
 
     if (item.tipo === "video") {
       el.className = "midia-video";
       el.autoplay = true;
-      el.muted = true;
-      el.playsInline = true;
-
-      el.onended = avancar;
-      el.onerror = avancar;
-
+      el.onended = tocar;
+      el.onerror = tocar;
       conteudo.appendChild(el);
       fadeIn();
-
-      el.play().catch(() => {
-        console.warn("▶️ Play bloqueado, avançando");
-        avancar();
-      });
-
       armWatchdog((item.duracao || 15) * 1000);
     }
   }, 400);
@@ -168,7 +121,6 @@ function renderNoticia(n) {
 
   setTimeout(() => {
     limpar();
-
     conteudo.innerHTML = `
       <div class="noticia-full">
         <div class="noticia-imagem">
@@ -179,7 +131,6 @@ function renderNoticia(n) {
         </div>
       </div>
     `;
-
     fadeIn();
     armWatchdog(10000);
   }, 400);
@@ -208,16 +159,16 @@ async function renderClima() {
     try {
       c = await fetch(`/api/clima/${tvId}`).then(r => r.json());
     } catch {
-      return avancar();
+      return tocar();
     }
 
     conteudo.innerHTML = `
       <div class="clima-full">
-        <div class="clima-cidade">${c.cidade || ""}</div>
+        <div class="clima-cidade">${c.cidade}</div>
         <div class="clima-principal">
           <div class="clima-icon">${getIconClima(c.descricao)}</div>
-          <div class="clima-temp">${c.temperatura ?? "--"}°</div>
-          <div class="clima-desc">${c.descricao || ""}</div>
+          <div class="clima-temp">${c.temperatura}°</div>
+          <div class="clima-desc">${c.descricao}</div>
         </div>
       </div>
     `;
@@ -228,11 +179,10 @@ async function renderClima() {
 }
 
 /* =========================
-   LOOP PRINCIPAL
+   LOOP
 ========================= */
 function tocar() {
   clearWatchdog();
-
   if (!playlist.length) return;
 
   if (anunciosRodados === 2 && noticias.length) {
@@ -245,21 +195,11 @@ function tocar() {
     return renderClima();
   }
 
-  const item = getProximoItemValido();
-  if (!item) return;
-
+  const item = playlist[indice];
+  indice = (indice + 1) % playlist.length;
   anunciosRodados++;
   renderMidia(item);
 }
-
-/* =========================
-   RODAPÉ
-========================= */
-setInterval(() => {
-  const d = new Date();
-  document.getElementById("dataHora").innerText =
-    d.toLocaleDateString("pt-BR") + " • " + d.toLocaleTimeString("pt-BR");
-}, 1000);
 
 /* =========================
    START
