@@ -2,55 +2,123 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>SAmídia • Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SAmídia • Painel Admin</title>
+  
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
   <link rel="stylesheet" href="admin.css">
 </head>
 <body>
 
 <div class="layout">
 
-  <!-- MENU -->
   <aside class="sidebar">
-    <h1>SAmídia</h1>
+    <div class="brand">
+      <i class="ph-fill ph-monitor-play"></i>
+      <h1>SAmídia</h1>
+    </div>
+    
     <nav>
-      <a class="active">📺 TVs</a>
-      <a>🖼 Publicidades</a>
-      <a>📰 Notícias</a>
-      <a>📊 Relatórios</a>
+      <a href="#" class="active">
+        <i class="ph ph-television"></i> Gerenciar TVs
+      </a>
+      <a href="#">
+        <i class="ph ph-image"></i> Publicidades
+      </a>
+      <a href="#">
+        <i class="ph ph-newspaper"></i> Notícias
+      </a>
+      <a href="#">
+        <i class="ph ph-chart-bar"></i> Relatórios
+      </a>
     </nav>
+
+    <div class="user-profile">
+      <div class="avatar">A</div>
+      <div class="user-info">
+        <strong>Admin</strong>
+        <span>Logado</span>
+      </div>
+    </div>
   </aside>
 
-  <!-- CONTEÚDO -->
   <main class="content">
 
-    <!-- TVs -->
-    <section>
-      <h2>📺 TVs</h2>
-      <div id="tvCards" class="cards"></div>
+    <header class="top-bar">
+      <h2>Painel de Controle</h2>
+      <div class="status-badge">
+        <span class="dot"></span> Sistema Operacional
+      </div>
+    </header>
+
+    <section class="section-tv">
+      <div class="section-header">
+        <h3><i class="ph ph-television-simple"></i> TVs Conectadas</h3>
+      </div>
+      <div id="tvCards" class="cards-grid"></div>
     </section>
 
-    <!-- PUBLICIDADES -->
-    <section>
-      <h2>🖼 Publicidades</h2>
-
-      <div class="upload-box">
-        <select id="tvMidiaSelect"></select>
-        <input type="file" id="arquivo">
-        <input type="number" id="duracao" value="10">
-        <select id="regiao">
-          <option value="">Todas</option>
-          <option value="fortaleza">Fortaleza</option>
-          <option value="ceara">Ceará</option>
-          <option value="brasil">Brasil</option>
-        </select>
-        <button onclick="enviarMidia()">Enviar</button>
+    <section class="section-media">
+      <div class="section-header">
+        <h3><i class="ph ph-images"></i> Gerenciar Mídias</h3>
+        <p>Selecione uma TV para enviar ou organizar o conteúdo.</p>
       </div>
 
-      <div id="listaMidias" class="cards"></div>
+      <div class="upload-panel">
+        
+        <div class="input-group">
+          <label>Selecione a TV</label>
+          <div class="select-wrapper">
+            <select id="tvMidiaSelect"></select>
+            <i class="ph ph-caret-down"></i>
+          </div>
+        </div>
+
+        <div class="input-group file-group">
+          <label>Arquivo de Mídia</label>
+          <input type="file" id="arquivo" class="custom-file-input">
+        </div>
+
+        <div class="input-group small">
+          <label>Duração (s)</label>
+          <input type="number" id="duracao" value="10">
+        </div>
+
+        <div class="input-group">
+          <label>Região</label>
+          <div class="select-wrapper">
+            <select id="regiao">
+              <option value="">Todas as Regiões</option>
+              <option value="fortaleza">Fortaleza</option>
+              <option value="ceara">Ceará</option>
+              <option value="brasil">Brasil</option>
+            </select>
+            <i class="ph ph-caret-down"></i>
+          </div>
+        </div>
+
+        <div class="input-group action">
+          <label>&nbsp;</label> <button onclick="enviarMidia()" class="btn-primary">
+            <i class="ph ph-upload-simple"></i> Enviar
+          </button>
+        </div>
+
+      </div>
+
+      <div id="listaMidias" class="cards-grid media-grid">
+        <div class="empty-state">
+          <i class="ph ph-selection-plus"></i>
+          <p>Selecione uma TV acima para carregar as mídias.</p>
+        </div>
+      </div>
     </section>
 
   </main>
-
 </div>
 
 <script src="admin.js"></script>
