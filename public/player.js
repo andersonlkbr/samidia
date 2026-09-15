@@ -9,11 +9,21 @@ let indice = 0;
 let anunciosRodados = 0;
 let watchdogTimer = null;
 
+// Configurações da TV (carregadas da API)
+let config = {
+  noticias_frequencia: 2,
+  clima_frequencia: 4,
+  noticias_duracao: 10,
+  clima_duracao: 9
+};
+
 // Controle de atualização
 let ultimaAtualizacao = Date.now();
-const INTERVALO_ATUALIZACAO = 2 * 60 * 1000; 
+const INTERVALO_ATUALIZACAO = 2 * 60 * 1000;
 
-/* UTIL */
+/* =========================
+   UTILITÁRIOS
+========================= */
 function fadeOut() { conteudo.style.opacity = 0; }
 function fadeIn() { conteudo.style.opacity = 1; }
 function limpar() { conteudo.innerHTML = ""; }
@@ -23,7 +33,36 @@ function armWatchdog(ms) {
   watchdogTimer = setTimeout(() => { console.warn("Watchdog: avançando"); tocar(); }, ms);
 }
 
-/* PRELOAD */
+/* =========================
+   PING — Heartbeat a cada 30s
+========================= */
+function enviarPing() {
+  fetch(`/api/ping/${tvId}`, { method: 'POST' }).catch(() => {});
+}
+setInterval(enviarPing, 30000);
+enviarPing(); // Ping imediato ao iniciar
+
+/* =========================
+   PROOF-OF-PLAY — Registrar exibição
+========================= */
+function registrarExibicao(item, duracaoReal) {
+  if (!item || !item.id || item.id === 'fallback') return;
+  
+  fetch('/api/relatorio', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      tv_id: tvId,
+      midia_id: item.id,
+      tipo: item.tipo,
+      duracao: Math.round(duracaoReal)
+    })
+  }).catch(() => {});
+}
+
+/* =========================
+   PRELOAD
+========================= */
 function preloadMidia(item) {
   return new Promise(resolve => {
     if (item.tipo === "imagem") {
@@ -37,38 +76,64 @@ function preloadMidia(item) {
       video.preload = "auto"; video.src = item.url; video.muted = true; video.playsInline = true;
       video.onloadeddata = () => resolve(video);
       video.onerror = () => resolve(null);
-      setTimeout(() => resolve(null), 3000); 
+      setTimeout(() => resolve(null), 3000);
     }
   });
 }
 
-/* DADOS */
+/* =========================
+   DADOS — Carregar playlist + notícias
+========================= */
 async function carregarDados() {
   try {
-    const novaPlaylist = await fetch(`/api/playlist/${tvId}?_=${Date.now()}`).then(r => r.json());
-    if (novaPlaylist && novaPlaylist.length > 0) playlist = novaPlaylist;
-  } catch (e) { console.error(e); }
+    const resposta = await fetch(`/api/playlist/${tvId}?_=${Date.now()}`).then(r => r.json());
+    
+    // A API agora retorna { playlist: [...], config: {...} }
+    if (resposta && resposta.playlist && resposta.playlist.length > 0) {
+      playlist = resposta.playlist;
+    } else if (Array.isArray(resposta) && resposta.length > 0) {
+      // Compatibilidade com formato antigo (array direto)
+      playlist = resposta;
+    }
+
+    // Atualizar configurações da TV
+    if (resposta && resposta.config) {
+      config = { ...config, ...resposta.config };
+    }
+  } catch (e) { console.error("Erro playlist:", e); }
+
   try {
     const novasNoticias = await fetch(`/api/noticias/${tvId}?_=${Date.now()}`).then(r => r.json());
     if (novasNoticias) noticias = novasNoticias;
-  } catch (e) { console.error(e); }
+  } catch (e) { console.error("Erro notícias:", e); }
 }
 
-/* RENDER MIDIA */
+/* =========================
+   RENDER MÍDIA
+========================= */
 async function renderMidia(item) {
   fadeOut(); clearWatchdog();
   const el = await preloadMidia(item);
   if (!el) return tocar();
 
+  const inicioExibicao = Date.now();
+
   setTimeout(() => {
     limpar();
     if (item.tipo === "imagem") {
       el.className = "midia-img"; conteudo.appendChild(el); fadeIn();
-      armWatchdog((item.duracao || 8) * 1000);
+      const duracao = (item.duracao || 8) * 1000;
+      armWatchdog(duracao);
+      // Registrar exibição quando o watchdog disparar
+      setTimeout(() => registrarExibicao(item, (Date.now() - inicioExibicao) / 1000), duracao - 500);
     }
     if (item.tipo === "video") {
       el.className = "midia-video"; el.autoplay = true; el.muted = true; el.playsInline = true;
-      el.onended = tocar; el.onerror = tocar;
+      el.onended = () => {
+        registrarExibicao(item, (Date.now() - inicioExibicao) / 1000);
+        tocar();
+      };
+      el.onerror = tocar;
       conteudo.appendChild(el); el.play().catch(() => tocar()); fadeIn();
       const duracaoSeguranca = (item.duracao || el.duration || 15) + 5;
       armWatchdog(duracaoSeguranca * 1000);
@@ -76,7 +141,9 @@ async function renderMidia(item) {
   }, 500);
 }
 
-/* NOTICIA */
+/* =========================
+   NOTÍCIA
+========================= */
 function renderNoticia(n) {
   fadeOut(); clearWatchdog();
   setTimeout(() => {
@@ -89,11 +156,14 @@ function renderNoticia(n) {
             <div class="noticia-titulo">${n.titulo || ""}</div>
         </div>
       </div>`;
-    fadeIn(); armWatchdog(10000);
+    fadeIn();
+    armWatchdog(config.noticias_duracao * 1000);
   }, 400);
 }
 
-/* CLIMA ATUALIZADO */
+/* =========================
+   CLIMA
+========================= */
 function getIconClima(d) {
   if (!d) return "☁️";
   d = d.toLowerCase();
@@ -110,11 +180,9 @@ async function renderClima() {
   setTimeout(async () => {
     limpar();
     let c;
-    try { c = await fetch(`/api/clima/${tvId}`).then(r => r.json()); } 
+    try { c = await fetch(`/api/clima/${tvId}`).then(r => r.json()); }
     catch { return tocar(); }
 
-    // Monta o HTML dos próximos dias usando o array 'previsao' que o backend manda
-    // Se não tiver previsão (erro de API), usa array vazio
     const listaDias = (c.previsao || []).map(dia => `
         <div class="forecast-item">
             <div class="f-dia">${dia.dia}</div>
@@ -128,7 +196,6 @@ async function renderClima() {
     conteudo.innerHTML = `
       <div class="clima-full">
         <div class="clima-card">
-            
             <div class="clima-hoje">
                 <div class="clima-esquerda">
                     <div class="clima-icon">${getIconClima(c.condicao || c.descricao)}</div>
@@ -139,32 +206,39 @@ async function renderClima() {
                     <div class="clima-desc">${c.descricao}</div>
                 </div>
             </div>
-
             <div class="clima-forecast-row">
                 ${listaDias}
             </div>
-
         </div>
       </div>
     `;
 
-    fadeIn(); armWatchdog(9000);
+    fadeIn();
+    armWatchdog(config.clima_duracao * 1000);
   }, 400);
 }
 
-/* LOOP */
+/* =========================
+   LOOP DE REPRODUÇÃO
+   Usa config.noticias_frequencia e config.clima_frequencia
+========================= */
 async function tocar() {
   clearWatchdog();
+
+  // Atualização periódica
   if (Date.now() - ultimaAtualizacao > INTERVALO_ATUALIZACAO) {
       ultimaAtualizacao = Date.now(); await carregarDados();
       if (!playlist.length) { setTimeout(tocar, 5000); return; }
   }
   if (!playlist.length) { setTimeout(carregarDados, 5000); return; }
 
-  if (anunciosRodados === 2 && noticias.length) {
+  // Intercalar notícias (configurável)
+  if (anunciosRodados === config.noticias_frequencia && noticias.length) {
     anunciosRodados++; return renderNoticia(noticias[Math.floor(Math.random() * noticias.length)]);
   }
-  if (anunciosRodados === 4) {
+
+  // Intercalar clima (configurável)
+  if (anunciosRodados >= config.clima_frequencia) {
     anunciosRodados = 0; return renderClima();
   }
 
@@ -175,7 +249,9 @@ async function tocar() {
   renderMidia(item);
 }
 
-/* RODAPÉ */
+/* =========================
+   RODAPÉ
+========================= */
 function atualizarHora() {
   const el = document.getElementById("dataHora");
   if (!el) return;
@@ -198,6 +274,9 @@ async function atualizarClimaRodape() {
 }
 setInterval(atualizarClimaRodape, 60000);
 
+/* =========================
+   INICIALIZAÇÃO
+========================= */
 (async () => {
   atualizarHora();
   atualizarClimaRodape();

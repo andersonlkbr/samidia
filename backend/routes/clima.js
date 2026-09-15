@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const fetch = require("node-fetch"); // Certifique-se de ter instalado: npm install node-fetch
+const fetch = require("node-fetch");
+const db = require("../database");
 
-const API_KEY = "eb1ed5eca10766b5becb02b69d67e5e4"; // Sua chave
+const API_KEY = process.env.OPENWEATHER_API_KEY || "";
 const BASE_URL = "https://api.openweathermap.org/data/2.5";
 
 // CACHE EM MEMÓRIA
@@ -10,18 +11,35 @@ const cacheClima = {};
 const CACHE_TTL = 10 * 60 * 1000; // 10 minutos
 
 router.get("/:tvId", async (req, res) => {
-  const cidade = "Porteiras"; // FIXO (Ideal: buscar do banco pelo tvId)
-  const agora = Date.now();
+  const { tvId } = req.params;
 
-  // 1️⃣ Se cache válido → retorna direto
-  if (
-    cacheClima[cidade] &&
-    agora - cacheClima[cidade].timestamp < CACHE_TTL
-  ) {
-    return res.json(cacheClima[cidade].data);
+  // Verifica se a API key está configurada
+  if (!API_KEY) {
+    console.error("⚠️ OPENWEATHER_API_KEY não configurada nas variáveis de ambiente");
+    return res.status(500).json({ erro: "API de clima não configurada" });
   }
 
   try {
+    // Busca a cidade da TV no banco de dados
+    const tv = await new Promise((resolve, reject) => {
+      db.get(`SELECT cidade, estado FROM tvs WHERE id = ?`, [tvId], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+
+    const cidade = tv?.cidade || "Porteiras"; // Fallback se não encontrar
+    const estado = tv?.estado || "CE";
+    const agora = Date.now();
+
+    // 1️⃣ Se cache válido → retorna direto
+    if (
+      cacheClima[cidade] &&
+      agora - cacheClima[cidade].timestamp < CACHE_TTL
+    ) {
+      return res.json(cacheClima[cidade].data);
+    }
+
     /* =========================
        CLIMA ATUAL
     ========================= */
@@ -51,16 +69,14 @@ router.get("/:tvId", async (req, res) => {
           dias[data].push(item);
         });
 
-        // Pega os próximos 3 dias (pula o índice 0 se for o dia atual incompleto, mas sua lógica 'slice' tá ok)
+        // Pega os próximos 3 dias (pula hoje)
         previsao = Object.keys(dias)
-          .slice(1, 4) // Pega amanhã, depois e depois (pula hoje)
+          .slice(1, 4)
           .map((data) => {
             const temps = dias[data].map(d => d.main.temp);
-            const climaInfo = dias[data][Math.floor(dias[data].length / 2)].weather[0]; // Pega o clima do meio do dia
+            const climaInfo = dias[data][Math.floor(dias[data].length / 2)].weather[0];
             
-            // Formatar dia da semana
             const dateObj = new Date(data);
-            // Corrige fuso horário gambiarra ou usa dia da semana simples
             const diaSemana = dateObj.toLocaleDateString('pt-BR', { weekday: 'short', timeZone: 'UTC' }).replace('.', '').toUpperCase();
 
             return {
@@ -68,7 +84,7 @@ router.get("/:tvId", async (req, res) => {
               min: Math.round(Math.min(...temps)),
               max: Math.round(Math.max(...temps)),
               descricao: climaInfo.description,
-              condicao: climaInfo.main, // Rain, Clouds, etc
+              condicao: climaInfo.main,
               icone: climaInfo.icon
             };
           });
@@ -76,13 +92,13 @@ router.get("/:tvId", async (req, res) => {
 
     const respostaFinal = {
       cidade: atual.name,
-      estado: "CE",
+      estado: estado,
       pais: atual.sys.country,
       temperatura: Math.round(atual.main.temp),
       descricao: atual.weather[0].description,
       condicao: atual.weather[0].main,
       icone: atual.weather[0].icon,
-      previsao: previsao // Array com os dias futuros
+      previsao: previsao
     };
 
     // 2️⃣ Salva no cache
@@ -96,9 +112,11 @@ router.get("/:tvId", async (req, res) => {
   } catch (err) {
     console.error("Erro clima:", err);
 
-    // 3️⃣ Se falhar → devolve último cache
-    if (cacheClima[cidade]) {
-      return res.json(cacheClima[cidade].data);
+    // 3️⃣ Se falhar → devolve último cache disponível
+    const cacheKeys = Object.keys(cacheClima);
+    if (cacheKeys.length > 0) {
+      const ultimoCache = cacheClima[cacheKeys[cacheKeys.length - 1]];
+      return res.json(ultimoCache.data);
     }
 
     res.status(500).json({});

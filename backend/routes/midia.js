@@ -9,18 +9,17 @@ const { uploadToR2, deleteFromR2 } = require("../utils/uploadR2");
 const upload = multer({ storage: multer.memoryStorage() });
 
 /* =========================
-   LISTAR MÍDIAS DA TV
+   LISTAR MÍDIAS POR CAMPANHA
 ========================= */
-router.get("/:tvId", (req, res) => {
-  const { tvId } = req.params;
+router.get("/campanha/:campanhaId", (req, res) => {
+  const { campanhaId } = req.params;
 
-  // IMPORTANTE: Adicionei "ORDER BY ordem ASC" para respeitar a ordenação
   db.all(
-    `SELECT * FROM midias WHERE tv_id = ? ORDER BY ordem ASC`,
-    [tvId],
+    `SELECT * FROM midias WHERE campanha_id = ? ORDER BY ordem ASC`,
+    [campanhaId],
     (err, rows) => {
       if (err) {
-        console.error("Erro listar mídias:", err);
+        console.error("Erro listar mídias por campanha:", err);
         return res.status(500).json([]);
       }
       res.json(rows || []);
@@ -29,12 +28,89 @@ router.get("/:tvId", (req, res) => {
 });
 
 /* =========================
-   UPLOAD DE MÍDIA
+   LISTAR MÍDIAS POR TV (legado + compatibilidade)
 ========================= */
-router.post("/:tvId", upload.single("arquivo"), async (req, res) => {
+router.get("/tv/:tvId", (req, res) => {
+  const { tvId } = req.params;
+
+  db.all(
+    `SELECT m.* FROM midias m
+     LEFT JOIN campanha_tvs ct ON m.campanha_id = ct.campanha_id
+     WHERE (ct.tv_id = ? OR m.tv_id = ?)
+     ORDER BY m.ordem ASC`,
+    [tvId, tvId],
+    (err, rows) => {
+      if (err) {
+        console.error("Erro listar mídias por TV:", err);
+        return res.status(500).json([]);
+      }
+      res.json(rows || []);
+    }
+  );
+});
+
+/* =========================
+   UPLOAD DE MÍDIA (para uma campanha)
+========================= */
+router.post("/campanha/:campanhaId", upload.single("arquivo"), async (req, res) => {
+  try {
+    const { campanhaId } = req.params;
+    const { duracao, regiao, data_inicio, data_fim, hora_inicio, hora_fim, dias_semana } = req.body;
+
+    if (!req.file) return res.status(400).json({ erro: "Arquivo não enviado" });
+
+    // Verificar se a campanha existe
+    const campanha = await new Promise((resolve, reject) => {
+      db.get(`SELECT id FROM campanhas WHERE id = ?`, [campanhaId], (err, row) => {
+        if (err) reject(err);
+        else resolve(row);
+      });
+    });
+
+    if (!campanha) return res.status(404).json({ erro: "Campanha não encontrada" });
+
+    const id = uuidv4();
+    const tipo = req.file.mimetype.startsWith("video") ? "video" : "imagem";
+
+    const url = await uploadToR2(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype
+    );
+
+    const ordem = Date.now();
+
+    db.run(
+      `INSERT INTO midias (id, campanha_id, tipo, url, duracao, regiao, ativo, ordem, data_inicio, data_fim, hora_inicio, hora_fim, dias_semana)
+       VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)`,
+      [
+        id, campanhaId, tipo, url,
+        duracao || 10, regiao || "Todas", ordem,
+        data_inicio || null, data_fim || null,
+        hora_inicio || null, hora_fim || null,
+        dias_semana || null
+      ],
+      err => {
+        if (err) {
+          console.error("Erro salvar mídia:", err);
+          return res.status(500).json({ erro: "Erro ao salvar mídia" });
+        }
+        res.json({ sucesso: true, id, url, tipo });
+      }
+    );
+  } catch (err) {
+    console.error("Erro upload mídia:", err);
+    res.status(500).json({ erro: "Erro no upload da mídia" });
+  }
+});
+
+/* =========================
+   UPLOAD LEGADO (por TV, mantido para compatibilidade)
+========================= */
+router.post("/tv/:tvId", upload.single("arquivo"), async (req, res) => {
   try {
     const { tvId } = req.params;
-    const { duracao, regiao } = req.body;
+    const { duracao, regiao, data_inicio, data_fim, hora_inicio, hora_fim, dias_semana } = req.body;
 
     if (!req.file) return res.status(400).json({ erro: "Arquivo não enviado" });
 
@@ -47,22 +123,24 @@ router.post("/:tvId", upload.single("arquivo"), async (req, res) => {
       req.file.mimetype
     );
 
-    // Definimos uma ordem padrão alta para ir pro final da fila, ou 0
-    const ordem = Date.now(); 
+    const ordem = Date.now();
 
     db.run(
-      `
-      INSERT INTO midias (id, tv_id, tipo, url, duracao, regiao, ativo, ordem)
-      VALUES (?, ?, ?, ?, ?, ?, 1, ?)
-      `,
-      [id, tvId, tipo, url, duracao || 10, regiao || "Todas", ordem],
+      `INSERT INTO midias (id, tv_id, tipo, url, duracao, regiao, ativo, ordem, data_inicio, data_fim, hora_inicio, hora_fim, dias_semana)
+       VALUES (?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?)`,
+      [
+        id, tvId, tipo, url,
+        duracao || 10, regiao || "Todas", ordem,
+        data_inicio || null, data_fim || null,
+        hora_inicio || null, hora_fim || null,
+        dias_semana || null
+      ],
       err => {
         if (err) {
-          // Se der erro de coluna 'ordem' não existente, o usuário precisa criar a coluna
           console.error("Erro salvar mídia:", err);
           return res.status(500).json({ erro: "Erro ao salvar mídia" });
         }
-        res.json({ sucesso: true });
+        res.json({ sucesso: true, id, url, tipo });
       }
     );
   } catch (err) {
@@ -72,17 +150,67 @@ router.post("/:tvId", upload.single("arquivo"), async (req, res) => {
 });
 
 /* =========================
-   ATIVAR / DESATIVAR
+   ORDENAR MÍDIAS
+   ⚠️ Deve vir ANTES de /:id para não ser capturada como parâmetro
+========================= */
+router.put("/ordenar", (req, res) => {
+  const { ids } = req.body;
+
+  if (!ids || !Array.isArray(ids)) {
+      return res.status(400).json({ erro: "Dados inválidos" });
+  }
+
+  db.serialize(() => {
+      const stmt = db.prepare("UPDATE midias SET ordem = ? WHERE id = ?");
+      
+      ids.forEach((id, index) => {
+          stmt.run(index, id);
+      });
+
+      stmt.finalize((err) => {
+          if (err) {
+              console.error("Erro ao ordenar:", err);
+              return res.status(500).json({ erro: "Erro ao salvar ordem" });
+          }
+          res.json({ sucesso: true });
+      });
+  });
+});
+
+/* =========================
+   ATUALIZAR MÍDIA (ativo, agendamento, etc)
 ========================= */
 router.put("/:id", (req, res) => {
   const { id } = req.params;
-  const { ativo } = req.body;
+  const { ativo, duracao, regiao, data_inicio, data_fim, hora_inicio, hora_fim, dias_semana } = req.body;
+
+  // Montar campos dinâmicos para atualizar
+  const campos = [];
+  const valores = [];
+
+  if (ativo !== undefined) { campos.push("ativo = ?"); valores.push(ativo ? 1 : 0); }
+  if (duracao !== undefined) { campos.push("duracao = ?"); valores.push(duracao); }
+  if (regiao !== undefined) { campos.push("regiao = ?"); valores.push(regiao); }
+  if (data_inicio !== undefined) { campos.push("data_inicio = ?"); valores.push(data_inicio || null); }
+  if (data_fim !== undefined) { campos.push("data_fim = ?"); valores.push(data_fim || null); }
+  if (hora_inicio !== undefined) { campos.push("hora_inicio = ?"); valores.push(hora_inicio || null); }
+  if (hora_fim !== undefined) { campos.push("hora_fim = ?"); valores.push(hora_fim || null); }
+  if (dias_semana !== undefined) { campos.push("dias_semana = ?"); valores.push(dias_semana || null); }
+
+  if (campos.length === 0) {
+    return res.status(400).json({ erro: "Nenhum campo para atualizar" });
+  }
+
+  valores.push(id);
 
   db.run(
-    `UPDATE midias SET ativo = ? WHERE id = ?`,
-    [ativo ? 1 : 0, id],
+    `UPDATE midias SET ${campos.join(", ")} WHERE id = ?`,
+    valores,
     err => {
-      if (err) return res.status(500).json({ erro: "Erro ao atualizar" });
+      if (err) {
+        console.error("Erro ao atualizar mídia:", err);
+        return res.status(500).json({ erro: "Erro ao atualizar" });
+      }
       res.json({ sucesso: true });
     }
   );
@@ -110,34 +238,6 @@ router.delete("/:id", (req, res) => {
       );
     }
   );
-});
-
-/* =========================
-   ORDENAR MÍDIAS (NOVO!)
-========================= */
-router.put("/ordenar", (req, res) => {
-  const { ids } = req.body; // Array de IDs na nova ordem
-
-  if (!ids || !Array.isArray(ids)) {
-      return res.status(400).json({ erro: "Dados inválidos" });
-  }
-
-  // Usa transação para atualizar a ordem de todos
-  db.serialize(() => {
-      const stmt = db.prepare("UPDATE midias SET ordem = ? WHERE id = ?");
-      
-      ids.forEach((id, index) => {
-          stmt.run(index, id); // Index 0 = ordem 0, Index 1 = ordem 1...
-      });
-
-      stmt.finalize((err) => {
-          if (err) {
-              console.error("Erro ao ordenar:", err);
-              return res.status(500).json({ erro: "Erro ao salvar ordem" });
-          }
-          res.json({ sucesso: true });
-      });
-  });
 });
 
 module.exports = router;
