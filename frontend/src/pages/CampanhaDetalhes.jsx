@@ -135,7 +135,7 @@ export default function CampanhaDetalhes() {
 
   const handleVincularTvs = async () => {
     try {
-      await api.post(`/campanha/${id}/tvs`, { tvs: selectedTvs });
+      await api.post(`/campanha/${id}/tvs`, { tv_ids: selectedTvs });
       toast.success('TVs vinculadas com sucesso');
       setIsTvModalOpen(false);
       fetchTvsVinculadas();
