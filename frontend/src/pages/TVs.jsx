@@ -23,10 +23,27 @@ export default function TVs() {
 
   useEffect(() => {
     fetchTvs();
+    
+    // Auto-refresh a cada 10 segundos para ver quem está online
+    const interval = setInterval(() => {
+      fetchTvsSilent();
+    }, 10000);
+
     if (isSuperAdmin || isAdmin) {
       fetchEmpresas();
     }
+    
+    return () => clearInterval(interval);
   }, [isSuperAdmin, isAdmin]);
+
+  const fetchTvsSilent = async () => {
+    try {
+      const res = await api.get('/tv');
+      setTvs(res.data);
+    } catch (error) {
+      // silencioso
+    }
+  };
 
   const fetchTvs = async () => {
     try {
