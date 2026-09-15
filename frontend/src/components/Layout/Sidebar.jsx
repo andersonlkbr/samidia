@@ -17,11 +17,11 @@ const linkClass = ({ isActive }) =>
     isActive ? 'bg-slate-800 text-blue-400' : 'text-slate-400 hover:text-slate-100 hover:bg-slate-800/50'
   }`;
 
-const Sidebar = () => {
+const Sidebar = ({ onClose }) => {
   const { usuario, logout, isAdmin } = useAuth();
 
   return (
-    <aside className="w-64 h-screen bg-slate-900 border-r border-slate-700 flex flex-col fixed left-0 top-0">
+    <aside className="w-full h-full bg-slate-900 border-r border-slate-700 flex flex-col">
       {/* Logo */}
       <div className="h-16 flex items-center px-6 border-b border-slate-700">
         <h1 className="text-xl font-bold text-slate-100 flex items-center gap-2">
@@ -32,41 +32,41 @@ const Sidebar = () => {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
-        <NavLink to="/dashboard" className={linkClass}>
+        <NavLink to="/dashboard" onClick={onClose} className={linkClass}>
           <LayoutDashboard size={20} />
           <span>Dashboard</span>
         </NavLink>
         
-        <NavLink to="/tvs" className={linkClass}>
+        <NavLink to="/tvs" onClick={onClose} className={linkClass}>
           <Monitor size={20} />
           <span>TVs</span>
         </NavLink>
 
-        <NavLink to="/campanhas" className={linkClass}>
+        <NavLink to="/campanhas" onClick={onClose} className={linkClass}>
           <Megaphone size={20} />
           <span>Campanhas</span>
         </NavLink>
 
         {isAdmin && (
           <>
-            <NavLink to="/empresas" className={linkClass}>
+            <NavLink to="/empresas" onClick={onClose} className={linkClass}>
               <Building2 size={20} />
               <span>Empresas</span>
             </NavLink>
 
-            <NavLink to="/usuarios" className={linkClass}>
+            <NavLink to="/usuarios" onClick={onClose} className={linkClass}>
               <Users size={20} />
               <span>Usuários</span>
             </NavLink>
           </>
         )}
 
-        <NavLink to="/relatorios" className={linkClass}>
+        <NavLink to="/relatorios" onClick={onClose} className={linkClass}>
           <BarChart3 size={20} />
           <span>Relatórios</span>
         </NavLink>
 
-        <NavLink to="/configuracoes" className={linkClass}>
+        <NavLink to="/configuracoes" onClick={onClose} className={linkClass}>
           <Settings size={20} />
           <span>Configurações</span>
         </NavLink>
