@@ -180,8 +180,12 @@ async function renderClima() {
   setTimeout(async () => {
     limpar();
     let c;
-    try { c = await fetch(`/api/clima/${tvId}`).then(r => r.json()); }
-    catch { return tocar(); }
+    try { 
+      const r = await fetch(`/api/clima/${tvId}`);
+      if (!r.ok) throw new Error();
+      c = await r.json();
+      if (!c || !c.cidade) throw new Error();
+    } catch { return tocar(); }
 
     const listaDias = (c.previsao || []).map(dia => `
         <div class="forecast-item">
@@ -268,8 +272,14 @@ async function atualizarClimaRodape() {
   const el = document.getElementById("clima");
   if (!el) return;
   try {
-    const c = await fetch(`/api/clima/${tvId}`).then(r => r.json());
-    el.innerText = `${c.cidade} ${c.temperatura}°`;
+    const r = await fetch(`/api/clima/${tvId}`);
+    if (!r.ok) throw new Error("Erro");
+    const c = await r.json();
+    if (c && c.cidade && c.temperatura !== undefined) {
+      el.innerText = `${c.cidade} ${c.temperatura}°`;
+    } else {
+      el.innerText = "";
+    }
   } catch { el.innerText = ""; }
 }
 setInterval(atualizarClimaRodape, 60000);
